@@ -1,0 +1,23 @@
+[project]
+name = "virtualfleet-webapp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "fricour", email = "florian@fricour.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "playwright>=1.62.0",
+    "shiny>=1.5.0",
+]
+
+[project.scripts]
+virtualfleet-webapp = "virtualfleet_webapp:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
