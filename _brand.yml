@@ -1,0 +1,26 @@
+color:
+  palette:
+    # Main colours
+    blue: "#006F9E"
+    yellow: "#FECA1D"
+
+    # Secondary colours
+    cyan: "#00B4A6"      # C72 J33
+    teal: "#2E6E85"      # C55 N48
+    lightblue: "#A9D9E0" # C31 J12
+    green: "#8CC63E"     # C48 J100
+
+    # Tertiary colours
+    khaki: "#C3B695"     # J29 N26
+    orange: "#F0812B"    # M58 J100
+    cream: "#EFEADD"     # J9 N7
+    mauve: "#8E7C89"     # M18 N45
+
+  foreground: black
+  background: white
+  primary: blue
+  light: yellow
+  warning: orange
+  danger: mauve
+
+  # typography -> check with IFREMER for that (paid license?)
