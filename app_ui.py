@@ -148,7 +148,7 @@ app_ui = ui.page_fluid(
         gap=10 # Vertical spacing in the sidebar
         ),
         # Main panel content
-        ui.navset_tab(
+        ui.navset_card_pill(
             ui.nav_panel(
                 "Deployment Map"
             ),
