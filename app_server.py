@@ -34,8 +34,8 @@ def server(input, output, session):
         return ui.div(
             {"class": card_class},
             header,
-            ui.input_numeric(id="num_floats", label="Number of floats", value=0),
-            ui.input_date(id="start_date", label="Start date"),
+            ui.input_numeric(id="num_floats", label=ui.span("Number of floats", style="font-size: 0.90rem;"), value=0),
+            ui.input_date(id="start_date", label=ui.span("Start date", style="font-size: 0.90rem;")),
             ui.input_action_button(
                 id="validate_plan", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
@@ -92,13 +92,13 @@ def server(input, output, session):
             header,
             ui.div(
                 {"class": "mission-grid"},
-                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (day)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Parking depth (m)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Profile depth (m)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Lifespan (unit)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (day)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Parking depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Profile depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Lifespan (unit)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
                 ui.div(
                     {"class": "full-row"},
-                    ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.95rem;"), value=0, update_on='blur'),
+                    ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"), value=0, update_on='blur'),
                 ),
             ),
         )

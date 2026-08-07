@@ -3,6 +3,7 @@ Application User Interface
 """
 
 from shiny import ui
+from virtualfleet_webapp.logic.utils import section_title
 
 app_ui = ui.page_fluid(
     # Style
@@ -22,17 +23,22 @@ app_ui = ui.page_fluid(
     ui.busy_indicators.use(),
     # Navbar layout
     ui.navset_bar(
+        navbar_options=ui.navbar_options(bg="var(--bs-primary)", theme="dark"),
         title=ui.row(
             ui.column(
-                2,
-                ui.a(
-                    ui.img(
-                        src="images/logo-EuroArgo.png",
-                        style="height:50px; display:block; pointer-events:none;",
+                4,
+                ui.div(
+                    ui.a(
+                        ui.img(
+                            src="images/logo-EuroArgo.png",
+                            style="height:60px; display:block; pointer-events:none;",
+                        ),
+                        href="https://www.euro-argo.eu/",
+                        target="_blank",
+                        style="display:inline-block; cursor:pointer; position:relative;",
                     ),
-                    href="https://www.euro-argo.eu/",
-                    target="_blank",
-                    style="display:inline-block; cursor:pointer; position:relative;",
+                    ui.span("VirtualFleet", style="font-weight: 700; font-size: 1.2rem;"),
+                    style="display: flex; align-items: center; gap: 12px;",
                 ),
             ),
         ),
@@ -41,31 +47,16 @@ app_ui = ui.page_fluid(
     ui.layout_sidebar(
         ui.sidebar(
             # Part 1 - Speed Field
-            ui.tooltip(
-                ui.span(
-                    ui.HTML("<strong>1. Speed Field </strong>"),
-                    ui.HTML('<i class="bi bi-question-circle-fill"></i>'),
-                ),
-                ui.HTML(
-                    "TBD"
-                ),
-                placement="right",
+            section_title(
+                1, "Speed Field",
+                tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
             ),
             ui.input_text(id="speed_field_path", label="", value="", placeholder="Path to the speed field"),
             ui.input_file(id="upload_config_file", label="", placeholder="Import config file"),
-            ui.HTML("<br>"),
+            ui.hr({"class": "section-divider"}),
 
             # Part 2 - Deployment Plan
-            ui.tooltip(
-                ui.span(
-                    ui.HTML("<strong>2. Deployment Plan </strong>"),
-                    ui.HTML('<i class="bi bi-question-circle-fill"></i>'),
-                ),
-                ui.HTML(
-                    "Create your deployment plan: build it on the map, set a start date, then validate it for simulation."
-                ),
-                placement="right",
-            ),
+            section_title(2, "Deployment Plan", tooltip="TBD"),
             # Hidden radio group driving which card is "selected"
             ui.div(
                 {"class": "option-radio"},
@@ -80,19 +71,10 @@ app_ui = ui.page_fluid(
             ui.output_ui("card_a"),
             # Option B card
             ui.output_ui("card_b"),
+            ui.hr({"class": "section-divider"}),
 
             # Part 3 - Mission Parameters
-            ui.tooltip(
-                ui.span(
-                    ui.HTML("<strong>3. Mission Parameters </strong>"),
-                    ui.HTML('<i class="bi bi-question-circle-fill"></i>'),
-                ),
-                ui.HTML(
-                    "TBD"
-                ),
-                placement="right",
-            ),
-
+            section_title(3, "Mission Parameters", tooltip="TBD"),
             # Hidden radio group driving which card is "selected"
             ui.div(
                 {"class": "mission-radio"},
@@ -103,42 +85,21 @@ app_ui = ui.page_fluid(
                     selected="same",
                 ),
             ),
- 
             ui.output_ui("card_same"),
             ui.output_ui("card_different"),
-            ui.HTML("<br>"),
+            ui.hr({"class": "section-divider"}),
 
             # Part 4 - Simulation Parameters
-            ui.tooltip(
-                ui.span(
-                    ui.HTML("<strong>4. Simulation Parameters </strong>"),
-                    ui.HTML('<i class="bi bi-question-circle-fill"></i>'),
+            section_title(4, "Simulation Parameters", tooltip="TBD"),
+
+            ui.div(
+                {"class": "mission-grid"},
+                ui.div(ui.input_numeric(id="simulation_time", label=ui.span("Simulation time (unit)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="time_step", label=ui.span("Time step (unit)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(
+                    {"class": "full-row"},
+                    ui.input_numeric(id="writing_step", label=ui.span("Writing step (unit)", style="font-size: 0.90rem;"), value=0, update_on='blur'),
                 ),
-                ui.HTML(
-                    "TBD"
-                ),
-                placement="right",
-            ),
-            ui.div(
-                ui.span("Simulation time (unit)", style="font-size: 0.95rem;"),
-                ui.input_numeric(
-                    id="param_simulation_time", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.div(
-                ui.span("Time step (unit)", style="font-size: 0.95rem;"),
-                ui.input_numeric(
-                    id="param_time_step", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.div(
-                ui.span("Writing step (unit)", style="font-size: 0.95rem;"),
-                ui.input_numeric(
-                    id="param_writing_step", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
             ),
             ui.input_task_button(id="run_simulation", label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'), class_="btn-primary", label_busy="Running..."),
             ui.input_task_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light", label_busy="Saving..."),
@@ -148,7 +109,7 @@ app_ui = ui.page_fluid(
         gap=10 # Vertical spacing in the sidebar
         ),
         # Main panel content
-        ui.navset_card_pill(
+        ui.navset_card_underline(
             ui.nav_panel(
                 "Deployment Map"
             ),
@@ -156,6 +117,38 @@ app_ui = ui.page_fluid(
                 "Simulation Results"
             ),
         ),
+    ),
+    # Footer
+    ui.div(
+        ui.div(
+            ui.div(
+                ui.a(
+                    ui.HTML('<i class="fa-brands fa-github"></i> GitHub'),
+                    href="https://github.com/euroargodev",
+                    target="_blank",
+                    class_="footer-link",
+                    style="font-weight: 700; margin-right: 20px;",
+                ),
+                ui.a(
+                    ui.HTML('<i class="fa-solid fa-envelope"></i> Contact'),
+                    href="mailto:florian@fricour.com",
+                    class_="footer-link",
+                    style="font-weight: 700;",
+                ),
+            ),
+            ui.div(
+                "Built with ",
+                ui.a(
+                    "Shiny for Python",
+                    href="https://shiny.posit.co/py/",
+                    target="_blank",
+                    class_="footer-link",
+                    style="font-weight: 700;",
+                ),
+            ),
+            style="display: flex; align-items: center; justify-content: space-between; padding: 15px; font-size: 0.85rem; color: var(--bs-secondary-color);",
+        ),
+        style="border-top: 1px solid var(--bs-secondary-colour); margin-top: 20px;",
     ),
     # use brand theme
     theme=ui.Theme.from_brand(__file__),
