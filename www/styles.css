@@ -51,3 +51,16 @@
 .option-radio .shiny-input-radiogroup {
     display: none;
 }
+
+/* Mission parameters grid */
+.mission-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+}
+.mission-grid .full-row {
+    grid-column: 1 / -1;
+}
+.mission-radio .shiny-input-radiogroup {
+    display: none;
+}

@@ -5,6 +5,8 @@ Server logic
 from shiny import reactive, render, ui
 
 def server(input, output, session):
+
+    # Part 1 - Deployment options for the sidebar
     @reactive.effect
     @reactive.event(input.pick_a)
     def _():
@@ -59,3 +61,65 @@ def server(input, output, session):
             header,
             ui.input_file(id="plan_file", label="", accept=[".json"]),
         )
+    
+    # Part 2 - Mission parameters for the sidebar
+    @reactive.effect
+    @reactive.event(input.pick_same)
+    def _():
+        ui.update_radio_buttons("mission_mode", selected="same")
+ 
+    @reactive.effect
+    @reactive.event(input.pick_different)
+    def _():
+        ui.update_radio_buttons("mission_mode", selected="different")
+
+    @render.ui
+    def card_same():
+        selected = input.mission_mode() == "same"
+        card_class = "option-card selected" if selected else "option-card collapsed"
+ 
+        header = ui.div(
+            {"class": "option-header", "onclick": "Shiny.setInputValue('pick_same', Math.random())"},
+            ui.tags.i(class_="fa-solid fa-sliders"),
+            "Same mission for all floats",
+        )
+ 
+        if not selected:
+            return ui.div({"class": card_class}, header)
+ 
+        return ui.div(
+            {"class": card_class},
+            header,
+            ui.div(
+                {"class": "mission-grid"},
+                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (day)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Parking depth (m)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Profile depth (m)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Lifespan (unit)", style="font-size: 0.95rem;"), value=0, update_on='blur')),
+                ui.div(
+                    {"class": "full-row"},
+                    ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.95rem;"), value=0, update_on='blur'),
+                ),
+            ),
+        )
+    
+    @render.ui
+    def card_different():
+        selected = input.mission_mode() == "different"
+        card_class = "option-card selected" if selected else "option-card collapsed"
+ 
+        header = ui.div(
+            {"class": "option-header", "onclick": "Shiny.setInputValue('pick_different', Math.random())"},
+            ui.tags.i(class_="fa-solid fa-file-upload"),
+            "Different mission per float",
+        )
+ 
+        if not selected:
+            return ui.div({"class": card_class}, header)
+ 
+        return ui.div(
+            {"class": card_class},
+            header,
+            ui.input_file(id="mission_config_file", label="", accept=[".csv", ".txt"]),
+        )
+    

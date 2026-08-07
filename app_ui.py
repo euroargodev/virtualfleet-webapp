@@ -92,42 +92,20 @@ app_ui = ui.page_fluid(
                 ),
                 placement="right",
             ),
+
+            # Hidden radio group driving which card is "selected"
             ui.div(
-                ui.span("Cycle duration (unit)"),
-                ui.input_numeric(
-                    id="param_cycle_duration", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
+                {"class": "mission-radio"},
+                ui.input_radio_buttons(
+                    "mission_mode",
+                    None,
+                    choices={"same": "Same", "different": "Different"},
+                    selected="same",
+                ),
             ),
-            ui.div(
-                ui.span("Parking depth (m)"),
-                ui.input_numeric(
-                    id="param_parking_depth", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.div(
-                ui.span("Profile depth (m)"),
-                ui.input_numeric(
-                    id="param_profile_depth", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.div(
-                ui.span("Lifespan (unit)"),
-                ui.input_numeric(
-                    id="param_lifespan", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.div(
-                ui.span("Vertical speed (m/s)"),
-                ui.input_numeric(
-                    id="param_vertical_speed", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.input_file(id="upload_mission_config_file", label="", placeholder="Mission config file"),
+ 
+            ui.output_ui("card_same"),
+            ui.output_ui("card_different"),
             ui.HTML("<br>"),
 
             # Part 4 - Simulation Parameters
@@ -142,21 +120,21 @@ app_ui = ui.page_fluid(
                 placement="right",
             ),
             ui.div(
-                ui.span("Simulation time (unit)"),
+                ui.span("Simulation time (unit)", style="font-size: 0.95rem;"),
                 ui.input_numeric(
                     id="param_simulation_time", label="", value=0, min=0, step=1, update_on='blur', width="100px"
                 ).add_class("mb-0"),
                 class_="d-flex align-items-center gap-2",
             ),
             ui.div(
-                ui.span("Time step (unit)"),
+                ui.span("Time step (unit)", style="font-size: 0.95rem;"),
                 ui.input_numeric(
                     id="param_time_step", label="", value=0, min=0, step=1, update_on='blur', width="100px"
                 ).add_class("mb-0"),
                 class_="d-flex align-items-center gap-2",
             ),
             ui.div(
-                ui.span("Writing step (unit)"),
+                ui.span("Writing step (unit)", style="font-size: 0.95rem;"),
                 ui.input_numeric(
                     id="param_writing_step", label="", value=0, min=0, step=1, update_on='blur', width="100px"
                 ).add_class("mb-0"),
