@@ -10,6 +10,10 @@ app_ui = ui.page_fluid(
             rel="stylesheet",
             href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css",
         ),
+        ui.tags.link(
+            rel="stylesheet",
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css",
+        ),
         ui.tags.link(rel="stylesheet", href="styles.css"),
     ),
     ui.busy_indicators.use(),
@@ -59,7 +63,6 @@ app_ui = ui.page_fluid(
                 ),
                 placement="right",
             ),
-            ui.HTML("Create the plan with the map"),
             ui.div(
                 ui.span("Number of floats"),
                 ui.input_numeric(
@@ -72,8 +75,7 @@ app_ui = ui.page_fluid(
                 ui.input_date(id="deployment_start_date", label="", width="150px").add_class("mb-0"),
                 class_="d-flex align-items-center gap-2",
             ),
-            ui.input_action_button(id="deployment_validate", label="Validate plan", class_="btn-primary"),
-            ui.HTML("Or, import your pre-built plan"),
+            ui.input_action_button(id="deployment_validate", label=ui.HTML('<i class="fa-solid fa-check"></i> validate Plan'), class_="btn-primary"),
             ui.input_file(id="upload_deployment_plan", label="", placeholder="Deployment plan file"),
             ui.HTML("<br>"),
 
@@ -158,8 +160,8 @@ app_ui = ui.page_fluid(
                 ).add_class("mb-0"),
                 class_="d-flex align-items-center gap-2",
             ),
-            ui.input_task_button(id="run_simulation", label="Run Simulation", class_="btn-primary", label_busy="Running..."),
-            ui.input_task_button(id="save_simulation", label="Save Simulation", class_="btn-light", label_busy="Saving..."),
+            ui.input_task_button(id="run_simulation", label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'), class_="btn-primary", label_busy="Running..."),
+            ui.input_task_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light", label_busy="Saving..."),
         # Sidebar layout options
         bg="",
         width=350,
