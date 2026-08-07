@@ -13,6 +13,24 @@ app_ui = ui.page_fluid(
         ui.tags.link(rel="stylesheet", href="styles.css"),
     ),
     ui.busy_indicators.use(),
+    # Navbar layout
+    ui.navset_bar(
+        title=ui.row(
+            ui.column(
+                2,
+                ui.a(
+                    ui.img(
+                        src="images/logo-EuroArgo.png",
+                        style="height:50px; display:block; pointer-events:none;",
+                    ),
+                    href="https://www.euro-argo.eu/",
+                    target="_blank",
+                    style="display:inline-block; cursor:pointer; position:relative;",
+                ),
+            ),
+        ),
+    ),
+    # Sidebar layout
     ui.layout_sidebar(
         ui.sidebar(
             # Part 1 - Speed Field
@@ -142,9 +160,19 @@ app_ui = ui.page_fluid(
             ),
             ui.input_task_button(id="run_simulation", label="Run Simulation", class_="btn-primary", label_busy="Running..."),
             ui.input_task_button(id="save_simulation", label="Save Simulation", class_="btn-light", label_busy="Saving..."),
+        # Sidebar layout options
         bg="",
         width=350,
         gap=10 # Vertical spacing in the sidebar
+        ),
+        # Main panel content
+        ui.navset_tab(
+            ui.nav_panel(
+                "Deployment Map"
+            ),
+            ui.nav_panel(
+                "Simulation Results"
+            ),
         ),
     ),
     # use brand theme
