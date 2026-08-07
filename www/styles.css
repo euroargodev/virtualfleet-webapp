@@ -1,3 +1,4 @@
+/* Buttons styles */
 .btn {
     border-radius: 0.75rem;
     padding: 0.5rem 1rem;
@@ -12,4 +13,41 @@
 
 .btn:active {
     transform: translateY(1px);
+}
+
+/* Deployment option card styles */
+.option-card {
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s ease;
+}
+.option-card.selected {
+    border: 2px solid var(--bs-primary);
+}
+.option-card.collapsed {
+    border: 1px solid var(--bs-border-color, #D8D8D8);
+    color: var(--bs-secondary-color, #6B6B6B);
+    padding: 12px;
+}
+.option-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+.option-card.collapsed .option-header {
+    margin-bottom: 0;
+    font-weight: 400;
+    color: var(--bs-secondary-color, #6B6B6B);
+}
+.option-card.selected .option-header {
+    color: var(--bs-primary);
+}
+/* hide the default radio buttons, we drive selection via the card click */
+.option-radio .shiny-input-radiogroup {
+    display: none;
 }

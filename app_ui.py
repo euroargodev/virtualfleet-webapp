@@ -5,6 +5,7 @@ Application User Interface
 from shiny import ui
 
 app_ui = ui.page_fluid(
+    # Style
     ui.head_content(
         ui.tags.link(
             rel="stylesheet",
@@ -15,7 +16,9 @@ app_ui = ui.page_fluid(
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css",
         ),
         ui.tags.link(rel="stylesheet", href="styles.css"),
+        #ui.tags.style(custom_css),
     ),
+    # Busy indicator
     ui.busy_indicators.use(),
     # Navbar layout
     ui.navset_bar(
@@ -63,21 +66,20 @@ app_ui = ui.page_fluid(
                 ),
                 placement="right",
             ),
+            # Hidden radio group driving which card is "selected"
             ui.div(
-                ui.span("Number of floats"),
-                ui.input_numeric(
-                    id="param_float_number", label="", value=0, min=0, step=1, update_on='blur', width="100px"
-                ).add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
+                {"class": "option-radio"},
+                ui.input_radio_buttons(
+                    id="deploy_option",
+                    label=None,
+                    choices={"A": "Option A", "B": "Option B"},
+                    selected="A",
+                ),
             ),
-            ui.div(
-                ui.span("Start date"),
-                ui.input_date(id="deployment_start_date", label="", width="150px").add_class("mb-0"),
-                class_="d-flex align-items-center gap-2",
-            ),
-            ui.input_action_button(id="deployment_validate", label=ui.HTML('<i class="fa-solid fa-check"></i> validate Plan'), class_="btn-primary"),
-            ui.input_file(id="upload_deployment_plan", label="", placeholder="Deployment plan file"),
-            ui.HTML("<br>"),
+            # Option A card
+            ui.output_ui("card_a"),
+            # Option B card
+            ui.output_ui("card_b"),
 
             # Part 3 - Mission Parameters
             ui.tooltip(
