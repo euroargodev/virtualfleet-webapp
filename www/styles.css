@@ -65,6 +65,12 @@
     display: none;
 }
 
+/* Bleed the navbar to the viewport edge, out of page_fluid's container-fluid padding */
+.navbar {
+    margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem));
+    margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem));
+}
+
 /* Footer links */
 .footer-link {
     color: var(--bs-primary);

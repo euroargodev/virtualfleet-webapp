@@ -2,7 +2,13 @@
 Server logic
 """
 
+import json
+import uuid
+
 from shiny import reactive, render, ui
+# import custom modules
+from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points
+from virtualfleet_webapp.view.module_map import map_server
 
 def server(input, output, session):
 
@@ -39,6 +45,10 @@ def server(input, output, session):
             ui.input_action_button(
                 id="validate_plan", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
+            ),
+            ui.download_button(
+                id="export_plan", label=ui.HTML('<i class="fa-solid fa-download"></i> Export deployment plan'),
+                style="width: 100%; background: var(--bs-light); color: black; border: none; margin-top: 8px;",
             ),
         )
 
@@ -92,10 +102,10 @@ def server(input, output, session):
             header,
             ui.div(
                 {"class": "mission-grid"},
-                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (day)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Parking depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Profile depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Lifespan (unit)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (hours)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Drifting depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Max. profile depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Life expectancy (cycles)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
                 ui.div(
                     {"class": "full-row"},
                     ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"), value=0, update_on='blur'),
@@ -120,6 +130,31 @@ def server(input, output, session):
         return ui.div(
             {"class": card_class},
             header,
-            ui.input_file(id="mission_config_file", label="", accept=[".csv", ".txt"]),
+            ui.input_file(id="mission_config_file", label="", accept=[".csv", ".txt"]), # should be a python dict()
         )
+
+    # Part 3 - Map for the main panel (see modules/module_map.py)
+    point_markers, line_markers, shape_markers = map_server("map")
+
+    @reactive.effect
+    @reactive.event(input.validate_plan)
+    def _():
+        try:
+            resolve_deployment_points(point_markers(), line_markers(), input.num_floats())
+        except ValueError as error:
+            ui.notification_show(str(error), type="error")
+            return
+        ui.notification_show("Plan OK", type="message")
+
+    @render.download_button(filename=lambda: f"deployment_plan_{uuid.uuid4().hex}.geojson")
+    def export_plan():
+        try:
+            deployment_points = resolve_deployment_points(
+                point_markers(), line_markers(), input.num_floats()
+            )
+        except ValueError as error:
+            ui.notification_show(str(error), type="error")
+            return
+        geojson = build_geojson(deployment_points, input.start_date())
+        yield json.dumps(geojson, indent=2)
     
