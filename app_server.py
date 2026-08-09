@@ -69,7 +69,7 @@ def server(input, output, session):
         return ui.div(
             {"class": card_class},
             header,
-            ui.input_file(id="plan_file", label="", accept=[".json"]),
+            ui.input_file(id="plan_file", label="", accept=[".geojson"]),
         )
     
     # Part 2 - Mission parameters for the sidebar
@@ -140,7 +140,9 @@ def server(input, output, session):
     @reactive.event(input.validate_plan)
     def _():
         try:
-            resolve_deployment_points(point_markers(), line_markers(), input.num_floats())
+            resolve_deployment_points(
+                point_markers(), line_markers(), shape_markers(), input.num_floats()
+            )
         except ValueError as error:
             ui.notification_show(str(error), type="error")
             return
@@ -150,7 +152,7 @@ def server(input, output, session):
     def export_plan():
         try:
             deployment_points = resolve_deployment_points(
-                point_markers(), line_markers(), input.num_floats()
+                point_markers(), line_markers(), shape_markers(), input.num_floats()
             )
         except ValueError as error:
             ui.notification_show(str(error), type="error")

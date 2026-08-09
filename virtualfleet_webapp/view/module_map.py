@@ -54,15 +54,11 @@ def map_server(input, output, session):
                 geom = feature["geometry"]
                 geom_type = geom["type"]
 
+                # Only one deployment mode (markers / line / polygon) can be active at a time. 
                 if geom_type == "Point":
-                    # Single markers and a deployment line are mutually
-                    # exclusive. If a line already exists, the line store
-                    # is non-empty and the point store is guaranteed empty
-                    # (this same rule prevents the reverse), so clearing
-                    # all markers only removes the one just rejected.
-                    if action == "create" and line_markers():
+                    if action == "create" and (line_markers() or shape_markers()):
                         ui.notification_show(
-                            "Can't mix single markers with a deployment line — clear the line first.",
+                            "Can't mix single markers with an existing line/polygon — clear it first.",
                             type="error",
                         )
                         dc.clear_markers()
@@ -72,15 +68,14 @@ def map_server(input, output, session):
                     add_or_remove(point_markers, action, {"lat": lat, "lon": lon})
 
                 elif geom_type == "LineString":
-                    if action == "create" and point_markers():
+                    if action == "create" and (point_markers() or shape_markers()):
                         ui.notification_show(
-                            "Can't mix a deployment line with single markers — clear the markers first.",
+                            "Can't mix a deployment line with existing markers/polygon — clear it first.",
                             type="error",
                         )
                         dc.clear_polylines()
                         continue
-                    # A deployment line is a straight source-to-destination
-                    # segment: exactly 2 points, no intermediate vertices.
+                    # A deployment line is a straight source-to-destination segment: exactly 2 points, no intermediate point.
                     if action == "create" and len(geom["coordinates"]) != 2:
                         ui.notification_show(
                             "A deployment line must have exactly 2 points (start and end) — no extra clicks in between.",
@@ -91,8 +86,16 @@ def map_server(input, output, session):
                     add_or_remove(line_markers, action, geom["coordinates"])
 
                 elif geom_type in ("Polygon", "MultiPolygon"):
-                    # TODO: fill with random or regular points, respect
-                    # square/circle/rectangle presets.
+                    if action == "create" and (point_markers() or line_markers()):
+                        ui.notification_show(
+                            "Can't mix a polygon with existing markers/line — clear it first.",
+                            type="error",
+                        )
+                        dc.clear_polygons()
+                        dc.clear_rectangles()
+                        continue
+                    # TODO: regular (grid) distribution as an alternative to
+                    # the random fill used at validate/export time.
                     add_or_remove(shape_markers, action, geom["coordinates"])
 
         dc.on_draw(handle_draw)
