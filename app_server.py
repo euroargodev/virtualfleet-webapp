@@ -5,7 +5,7 @@ Server logic
 import json
 import uuid
 
-from shiny import reactive, render, req, ui
+from shiny import reactive, render, ui
 # import custom modules
 from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points
 from virtualfleet_webapp.view.module_map import map_server
@@ -14,7 +14,6 @@ def server(input, output, session):
 
     # Reactive state for the deployment plan, shared across the sidebar (Part 1)
     # and the map/export logic (Part 3).
-    valid_plan = reactive.Value(False)
     deployment_points = reactive.Value([])
 
     # Part 1 - Deployment options for the sidebar
@@ -42,14 +41,6 @@ def server(input, output, session):
         if not selected:
             return ui.div({"class": card_class}, header)
 
-        # Grey out (and disable clicks on) the export button until the plan is validated.
-        export_style = "width: 100%; color: black; border: none; margin-top: 8px; "
-        export_style += (
-            "background: var(--bs-light);"
-            if valid_plan()
-            else "background: #ced4da; opacity: 0.65; pointer-events: none; cursor: not-allowed;"
-        )
-
         return ui.div(
             {"class": card_class},
             header,
@@ -61,7 +52,7 @@ def server(input, output, session):
             ),
             ui.download_button(
                 id="export_plan", label=ui.HTML('<i class="fa-solid fa-download"></i> Export deployment plan'),
-                style=export_style,
+                style="width: 100%; background: var(--bs-light); color: black; border: none; margin-top: 8px;",
             ),
         )
 
@@ -149,16 +140,6 @@ def server(input, output, session):
     # Part 3 - Map for the main panel (see modules/module_map.py)
     point_markers, line_markers, shape_markers = map_server("map")
 
-    # Any change to the drawn geometry or float count invalidates a previously
-    # validated plan, so a stale plan can't be exported.
-    @reactive.effect
-    def _invalidate_plan_on_change(): # could also just write def _()
-        point_markers()
-        line_markers()
-        shape_markers()
-        input.num_floats()
-        valid_plan.set(False)
-
     @reactive.effect
     @reactive.event(input.validate_plan)
     def _():
@@ -170,12 +151,10 @@ def server(input, output, session):
             ui.notification_show(str(error), type="error")
             return
         deployment_points.set(points)
-        valid_plan.set(True)
         ui.notification_show("Plan OK", type="message")
 
     @render.download_button(filename=lambda: f"deployment_plan_{uuid.uuid4().hex}.geojson")
     def export_plan():
-        req(valid_plan())  # does not harm to keep this here even though the button is disabled when the plan is invalid
         geojson = build_geojson(deployment_points(), input.start_date())
         yield json.dumps(geojson, indent=2)
     
