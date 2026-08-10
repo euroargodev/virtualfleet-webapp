@@ -1,4 +1,4 @@
 Deployment plan 
-- check time format
+- check time format in geojson file
 - interpolate along line (raw lat/lon space or geodesic ?)
-- shape = polygon, should be convex (every inner corner < 180 degrees), nothing fancy
+- shape = polygon, should be convex (every inner corner < 180 degrees), nothing fancy -> actually replaced it with a simple rectangle function

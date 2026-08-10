@@ -28,15 +28,18 @@ def map_server(input, output, session):
         # Add options
         m.add(ScaleControl(position='bottomleft'))
 
+        # Drawing control for markers, lines and polygons, check also https://geoman.io/docs/leaflet/toolbar
         dc = GeomanDrawControl(
             position='topleft',
-            draw_circle=False,
-            draw_marker=True,
-            draw_polygon=True,
-            draw_polyline=False,
-            draw_rectangle=True,
-            edit_mode=False,
-            drag_mode=True,
+            marker={'pathOptions': {}},
+            circlemarker={},
+            polyline={'pathOptions': {}},
+            rectangle={'pathOptions': {}},
+            polygon={},
+            edit=False,
+            drag=True,
+            cut=False,
+            rotate=False
         )
 
         def add_or_remove(store, action, value):
@@ -48,7 +51,7 @@ def map_server(input, output, session):
                 current.remove(value)
                 store.set(current)
 
-        def handle_draw(_control, action, geo_json):
+        def handle_draw(_control, action, geo_json): # see https://ipyleaflet.readthedocs.io/en/latest/_modules/ipyleaflet/leaflet.html#GeomanDrawControl
 
             for feature in geo_json:
                 geom = feature["geometry"]
@@ -75,7 +78,7 @@ def map_server(input, output, session):
                         )
                         dc.clear_polylines()
                         continue
-                    # A deployment line is a straight source-to-destination segment: exactly 2 points, no intermediate point.
+                    # A deployment line is exactly 2 points, no intermediate point.
                     if action == "create" and len(geom["coordinates"]) != 2:
                         ui.notification_show(
                             "A deployment line must have exactly 2 points (start and end) — no extra clicks in between.",
@@ -94,8 +97,7 @@ def map_server(input, output, session):
                         dc.clear_polygons()
                         dc.clear_rectangles()
                         continue
-                    # TODO: regular (grid) distribution as an alternative to
-                    # the random fill used at validate/export time.
+                    # TODO
                     add_or_remove(shape_markers, action, geom["coordinates"])
 
         dc.on_draw(handle_draw)

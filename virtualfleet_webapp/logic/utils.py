@@ -36,7 +36,7 @@ def interpolate_along_line(coords, n):
 
 
 def resolve_deployment_points(points, lines, shapes, num_floats):
-    """Validate the current map state and return the flat list of float
+    """Validate the current map state and return the list of float
     positions to deploy. Raises ValueError if the plan is incomplete.
     Only the first drawn line/shape is used if there are several.
     """
