@@ -1,8 +1,9 @@
 from shiny import ui
 import numpy as np
 import datetime
+import os
 
-# UI
+# Sidebar
 def section_title(number, text, tooltip=None):
     """Numbered circle badge + header used at the top of each sidebar section."""
     children = [
@@ -17,6 +18,13 @@ def section_title(number, text, tooltip=None):
     if tooltip:
         return ui.tooltip(heading, tooltip, placement="right")
     return heading
+
+def check_nc_file(value):
+    if not value.lower().endswith(".nc"):
+        return "File should be a NetCDF file (ends with .nc)"
+    if not os.path.exists(value):
+        return "File not found at this path"
+    return None
 
 # Map module
 def interpolate_along_line(coords, n):

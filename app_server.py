@@ -6,17 +6,32 @@ import json
 import uuid
 
 from shiny import reactive, render, ui
+from shiny_validate import InputValidator, check
+
 # import custom modules
-from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points
+from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, check_nc_file
 from virtualfleet_webapp.view.module_map import map_server
 
 def server(input, output, session):
+
+    ###########################
+    # General reactive values #
+    ###########################
+    iv = InputValidator() # Add InputValidator to validate path to speed field
 
     # Reactive state for the deployment plan, shared across the sidebar (Part 1)
     # and the map/export logic (Part 3).
     deployment_points = reactive.Value([])
 
-    # Part 1 - Deployment options for the sidebar
+    ########################################################
+    # Part 1 - Speed field and config file for the sidebar #
+    ########################################################
+    iv.add_rule("speed_field_path", check_nc_file)
+    iv.enable()
+
+    ###############################################
+    # Part 2 - Deployment options for the sidebar #
+    ###############################################
     @reactive.effect
     @reactive.event(input.pick_a)
     def _():
@@ -75,8 +90,10 @@ def server(input, output, session):
             header,
             ui.input_file(id="plan_file", label="", accept=[".geojson"]),
         )
-    
-    # Part 2 - Mission parameters for the sidebar
+
+    ###############################################
+    # Part 3 - Mission parameters for the sidebar #
+    ###############################################
     @reactive.effect
     @reactive.event(input.pick_same)
     def _():
@@ -137,7 +154,9 @@ def server(input, output, session):
             ui.input_file(id="mission_config_file", label="", accept=[".csv", ".txt"]), # should be a python dict()
         )
 
-    # Part 3 - Map for the main panel (see modules/module_map.py)
+    ###############################################
+    # Map module part (see modules/module_map.py) #
+    ###############################################
     point_markers, line_markers, shape_markers = map_server("map")
 
     @reactive.effect
