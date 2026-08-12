@@ -5,6 +5,7 @@ Deployment plan
 
 Velocity field
 - 3 methods but we only keep the custom one so to say...
+- config file -> python file OK? 
 
 Info
 - check geojson file here https://www.chatdb.ai/tools/geojson-viewer

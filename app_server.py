@@ -9,7 +9,7 @@ from shiny import reactive, render, ui
 from shiny_validate import InputValidator, check
 
 # import custom modules
-from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, check_nc_file
+from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, check_nc_file, check_config_file
 from virtualfleet_webapp.view.module_map import map_server
 
 def server(input, output, session):
@@ -27,6 +27,7 @@ def server(input, output, session):
     # Part 1 - Speed field and config file for the sidebar #
     ########################################################
     iv.add_rule("speed_field_path", check_nc_file)
+    iv.add_rule("upload_config_file", check_config_file)
     iv.enable()
 
     ###############################################

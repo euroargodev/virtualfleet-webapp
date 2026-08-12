@@ -1,12 +1,67 @@
 import datetime
+import json
 
 import pytest
 
 from virtualfleet_webapp.logic.utils import (
     build_geojson,
+    check_config_file,
     interpolate_along_line,
     resolve_deployment_points,
 )
+
+
+def _write_config(tmp_path, content):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(content)
+    return [{"datapath": str(config_path)}]
+
+
+FULL_VARIABLES = {"U": "uo", "V": "vo"}
+FULL_DIMENSIONS = {"time": "time", "depth": "depth", "lat": "latitude", "lon": "longitude"}
+
+
+class TestCheckConfigFile:
+    def test_no_upload_is_valid(self):
+        assert check_config_file(None) is None
+        assert check_config_file([]) is None
+
+    def test_valid_config_passes(self, tmp_path):
+        content = json.dumps({"variables": FULL_VARIABLES, "dimensions": FULL_DIMENSIONS})
+        assert check_config_file(_write_config(tmp_path, content)) is None
+
+    def test_top_level_must_be_an_object(self, tmp_path):
+        content = json.dumps([1, 2, 3])
+        error = check_config_file(_write_config(tmp_path, content))
+        assert error is not None
+
+    def test_missing_variables_dict(self, tmp_path):
+        content = json.dumps({"dimensions": FULL_DIMENSIONS})
+        error = check_config_file(_write_config(tmp_path, content))
+        assert "variables" in error
+
+    def test_missing_dimensions_dict(self, tmp_path):
+        content = json.dumps({"variables": FULL_VARIABLES})
+        error = check_config_file(_write_config(tmp_path, content))
+        assert "dimensions" in error
+
+    def test_missing_required_variable_key(self, tmp_path):
+        content = json.dumps({"variables": {"U": "uo"}, "dimensions": FULL_DIMENSIONS})
+        error = check_config_file(_write_config(tmp_path, content))
+        assert error is not None
+        assert "V" in error
+
+    def test_missing_required_dimension_key(self, tmp_path):
+        content = json.dumps(
+            {"variables": FULL_VARIABLES, "dimensions": {"time": "time", "lat": "latitude", "lon": "longitude"}}
+        )
+        error = check_config_file(_write_config(tmp_path, content))
+        assert error is not None
+        assert "depth" in error
+
+    def test_invalid_json_returns_error(self, tmp_path):
+        error = check_config_file(_write_config(tmp_path, "this is not valid json {"))
+        assert error is not None
 
 
 class TestInterpolateAlongLine:

@@ -1,0 +1,4 @@
+{
+    "variables": {"U": "uo", "V": "vo"},
+    "dimensions": {"time": "time", "depth": "depth", "lat": "latitude", "lon": "longitude"}
+}
