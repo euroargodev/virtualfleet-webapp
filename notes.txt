@@ -3,5 +3,14 @@ Deployment plan
 - interpolate along line (raw lat/lon space or geodesic ?)
 - shape = polygon, should be convex (every inner corner < 180 degrees), nothing fancy -> actually replaced it with a simple rectangle function
 
+Velocity field
+- 3 methods but we only keep the custom one so to say...
+
 Info
 - check geojson file here https://www.chatdb.ai/tools/geojson-viewer
+
+brand.yml
+typography -> check with IFREMER for that (paid license?)
+
+Parcels
+VFleet.plot_positions() does not work anymore, Parcels change their code all the time, it often breaks stuff.

@@ -106,13 +106,13 @@ def server(input, output, session):
             header,
             ui.div(
                 {"class": "mission-grid"},
-                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (hours)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Drifting depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Max. profile depth (m)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Life expectancy (cycles)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (hours)", style="font-size: 0.90rem;"), value=240, update_on='blur')),
+                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Drifting depth (m)", style="font-size: 0.90rem;"), value=1000, update_on='blur')),
+                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Max. profile depth (m)", style="font-size: 0.90rem;"), value=2000, update_on='blur')),
+                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Life expectancy (cycles)", style="font-size: 0.90rem;"), value=500, update_on='blur')),
                 ui.div(
                     {"class": "full-row"},
-                    ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"), value=0, update_on='blur'),
+                    ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"), value=0.09, update_on='blur'),
                 ),
             ),
         )

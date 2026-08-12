@@ -53,7 +53,7 @@ app_ui = ui.page_fluid(
                 1, "Speed Field",
                 tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
             ),
-            ui.input_text(id="speed_field_path", label="", value="", placeholder="Path to the speed field"),
+            ui.input_text(id="speed_field_path", label="", value="", placeholder="Path to speed field"),
             ui.input_file(id="upload_config_file", label="", placeholder="Import config file"),
             ui.hr({"class": "section-divider"}),
 
