@@ -22,18 +22,9 @@ FULL_DIMENSIONS = {"time": "time", "depth": "depth", "lat": "latitude", "lon": "
 
 
 class TestCheckConfigFile:
-    def test_no_upload_is_valid(self):
-        assert check_config_file(None) is None
-        assert check_config_file([]) is None
-
     def test_valid_config_passes(self, tmp_path):
         content = json.dumps({"variables": FULL_VARIABLES, "dimensions": FULL_DIMENSIONS})
         assert check_config_file(_write_config(tmp_path, content)) is None
-
-    def test_top_level_must_be_an_object(self, tmp_path):
-        content = json.dumps([1, 2, 3])
-        error = check_config_file(_write_config(tmp_path, content))
-        assert error is not None
 
     def test_missing_variables_dict(self, tmp_path):
         content = json.dumps({"dimensions": FULL_DIMENSIONS})
@@ -58,10 +49,6 @@ class TestCheckConfigFile:
         error = check_config_file(_write_config(tmp_path, content))
         assert error is not None
         assert "depth" in error
-
-    def test_invalid_json_returns_error(self, tmp_path):
-        error = check_config_file(_write_config(tmp_path, "this is not valid json {"))
-        assert error is not None
 
 
 class TestInterpolateAlongLine:

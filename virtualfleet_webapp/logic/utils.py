@@ -43,13 +43,11 @@ def check_config_file(value):
     try:
         with open(value[0]["datapath"], "r") as f:
             config = json.load(f)
-    except json.JSONDecodeError:
-        return "File could not be read as valid JSON"
     except Exception:
         return "File could not be read"
 
     if not isinstance(config, dict):
-        return "File must contain a JSON object"
+        return "File must contain dict"
 
     variables = config.get("variables")
     dimensions = config.get("dimensions")

@@ -54,7 +54,7 @@ app_ui = ui.page_fluid(
                 tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
             ),
             ui.input_text(id="speed_field_path", label="", value="./data/cmems_speed_field.nc", placeholder="Path to speed field"),
-            ui.input_file(id="upload_config_file", label="", placeholder="Import variable mapping file"),
+            ui.input_file(id="upload_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
             ui.hr({"class": "section-divider"}),
 
             # Part 2 - Deployment Plan
