@@ -24,6 +24,7 @@ def server(input, output, session):
     # and the map/export logic (Part 3).
     deployment_points = reactive.Value([])  # Option A: drawn/placed on the map
     uploaded_plan = reactive.Value(None)    # Option B: parsed from an uploaded file
+    last_validated_option = reactive.Value(None)  # "A" or "B", whichever was last validated
 
     ########################################################
     # Part 1 - Speed field and config file for the sidebar #
@@ -98,22 +99,28 @@ def server(input, output, session):
             ),
         )
 
-    # Will invalidate as soon as it is used.
+    # Reflects whichever option was last validated, regardless of which
+    # card is currently displayed in the sidebar.
     @reactive.calc
     def last_validated_plan():
-        if input.deploy_option() == "B":
+        option = last_validated_option()
+
+        if option == "B":
             return uploaded_plan()
 
-        points = deployment_points()
-        start = input.start_date()
-        if not points or not start:
-            return None
-        t = np.datetime64(start)
-        return {
-            "lat": np.array([p["lat"] for p in points]),
-            "lon": np.array([p["lon"] for p in points]),
-            "time": np.array([t] * len(points)),
-        }
+        if option == "A":
+            points = deployment_points()
+            start = input.start_date()
+            if not points or not start:
+                return None
+            t = np.datetime64(start)
+            return {
+                "lat": np.array([p["lat"] for p in points]),
+                "lon": np.array([p["lon"] for p in points]),
+                "time": np.array([t] * len(points)),
+            }
+
+        return None
 
     ###############################################
     # Part 3 - Mission parameters for the sidebar #
@@ -181,7 +188,7 @@ def server(input, output, session):
     ###############################################
     # Map module part (see modules/module_map.py) #
     ###############################################
-    point_markers, line_markers, shape_markers = map_server("map")
+    point_markers, line_markers, shape_markers = map_server("map", plan=last_validated_plan, show=input.show_plan)
 
     @reactive.effect
     @reactive.event(input.validate_plan_a)
@@ -194,6 +201,7 @@ def server(input, output, session):
             ui.notification_show(str(error), type="error")
             return
         deployment_points.set(points)
+        last_validated_option.set("A")
         ui.notification_show("Plan OK", type="message")
 
     @reactive.effect
@@ -209,6 +217,7 @@ def server(input, output, session):
             ui.notification_show("Could not read the uploaded plan.", type="error")
             return
         uploaded_plan.set(plan)
+        last_validated_option.set("B")
         ui.notification_show("Plan OK", type="message")
 
     @render.download_button(filename=lambda: f"deployment_plan_{uuid.uuid4().hex}.geojson")

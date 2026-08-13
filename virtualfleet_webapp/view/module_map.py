@@ -1,4 +1,4 @@
-from ipyleaflet import Map, ScaleControl, GeomanDrawControl, basemaps
+from ipyleaflet import Map, Marker, ScaleControl, GeomanDrawControl, basemaps
 from shiny import module, reactive, ui
 from shinywidgets import output_widget, render_widget
 
@@ -9,100 +9,131 @@ def map_ui():
     )
 
 @module.server
-def map_server(input, output, session):
+def map_server(input, output, session, plan, show):
 
     point_markers = reactive.Value([])
     line_markers = reactive.Value([])
     shape_markers = reactive.Value([])
+    preview_markers = []
+
+    m = Map(
+            center=(0, 0),
+            zoom=2,
+            basemap=basemaps.Esri.WorldImagery,
+            scroll_wheel_zoom=True,
+    )
+
+    # Add options
+    m.add(ScaleControl(position='bottomleft'))
+
+    # Drawing control for markers, lines and polygons, check also https://geoman.io/docs/leaflet/toolbar
+    dc = GeomanDrawControl(
+        position='topright',
+        marker={'pathOptions': {}},
+        circlemarker={},
+        polyline={'pathOptions': {}},
+        rectangle={'pathOptions': {}},
+        polygon={},
+        edit=False,
+        drag=True,
+        cut=False,
+        rotate=False
+    )
+
+    def add_or_remove(store, action, value):
+        current = store()
+        if action == "create":
+            store.set(current + [value])
+        elif action == "remove" and value in current:
+            current = current.copy() # needed to avoid modifying the list in place, which would not trigger a reactive update
+            current.remove(value)
+            store.set(current)
+
+    def handle_draw(_control, action, geo_json): # see https://ipyleaflet.readthedocs.io/en/latest/_modules/ipyleaflet/leaflet.html#GeomanDrawControl
+
+        for feature in geo_json:
+            geom = feature["geometry"]
+            geom_type = geom["type"]
+
+            # Only one deployment mode (markers / line / polygon) can be active at a time.
+            if geom_type == "Point":
+                if action == "create" and (line_markers() or shape_markers()):
+                    ui.notification_show(
+                        "Can't mix single markers with an existing line/polygon — clear it first.",
+                        type="error",
+                    )
+                    dc.clear_markers()
+                    dc.clear_circle_markers()
+                    continue
+                lon, lat = geom["coordinates"]
+                add_or_remove(point_markers, action, {"lat": lat, "lon": lon})
+
+            elif geom_type == "LineString":
+                if action == "create" and (point_markers() or shape_markers()):
+                    ui.notification_show(
+                        "Can't mix a deployment line with existing markers/polygon — clear it first.",
+                        type="error",
+                    )
+                    dc.clear_polylines()
+                    continue
+                # A deployment line is exactly 2 points, no intermediate point.
+                if action == "create" and len(geom["coordinates"]) != 2:
+                    ui.notification_show(
+                        "A deployment line must have exactly 2 points (start and end) — no extra clicks in between.",
+                        type="error",
+                    )
+                    dc.clear_polylines()
+                    continue
+                add_or_remove(line_markers, action, geom["coordinates"])
+
+            elif geom_type in ("Polygon", "MultiPolygon"):
+                if action == "create" and (point_markers() or line_markers()):
+                    ui.notification_show(
+                        "Can't mix a polygon with existing markers/line — clear it first.",
+                        type="error",
+                    )
+                    dc.clear_polygons()
+                    dc.clear_rectangles()
+                    continue
+                # TODO
+                add_or_remove(shape_markers, action, geom["coordinates"])
+
+    dc.on_draw(handle_draw)
+    m.add(dc)
+
+    def clear_all_layers():
+        dc.clear_markers()
+        dc.clear_circle_markers()
+        dc.clear_polylines()
+        dc.clear_polygons()
+        dc.clear_rectangles()
 
     @output
     @render_widget
     def map():
-        m = Map(
-                center=(0, 0),
-                zoom=2,
-                basemap=basemaps.Esri.WorldImagery,
-                scroll_wheel_zoom=True,
-        )
-
-        # Add options
-        m.add(ScaleControl(position='bottomleft'))
-
-        # Drawing control for markers, lines and polygons, check also https://geoman.io/docs/leaflet/toolbar
-        dc = GeomanDrawControl(
-            position='topleft',
-            marker={'pathOptions': {}},
-            circlemarker={},
-            polyline={'pathOptions': {}},
-            rectangle={'pathOptions': {}},
-            polygon={},
-            edit=False,
-            drag=True,
-            cut=False,
-            rotate=False
-        )
-
-        def add_or_remove(store, action, value):
-            current = store()
-            if action == "create":
-                store.set(current + [value])
-            elif action == "remove" and value in current:
-                current = current.copy() # needed to avoid modifying the list in place, which would not trigger a reactive update
-                current.remove(value)
-                store.set(current)
-
-        def handle_draw(_control, action, geo_json): # see https://ipyleaflet.readthedocs.io/en/latest/_modules/ipyleaflet/leaflet.html#GeomanDrawControl
-
-            for feature in geo_json:
-                geom = feature["geometry"]
-                geom_type = geom["type"]
-
-                # Only one deployment mode (markers / line / polygon) can be active at a time. 
-                if geom_type == "Point":
-                    if action == "create" and (line_markers() or shape_markers()):
-                        ui.notification_show(
-                            "Can't mix single markers with an existing line/polygon — clear it first.",
-                            type="error",
-                        )
-                        dc.clear_markers()
-                        dc.clear_circle_markers()
-                        continue
-                    lon, lat = geom["coordinates"]
-                    add_or_remove(point_markers, action, {"lat": lat, "lon": lon})
-
-                elif geom_type == "LineString":
-                    if action == "create" and (point_markers() or shape_markers()):
-                        ui.notification_show(
-                            "Can't mix a deployment line with existing markers/polygon — clear it first.",
-                            type="error",
-                        )
-                        dc.clear_polylines()
-                        continue
-                    # A deployment line is exactly 2 points, no intermediate point.
-                    if action == "create" and len(geom["coordinates"]) != 2:
-                        ui.notification_show(
-                            "A deployment line must have exactly 2 points (start and end) — no extra clicks in between.",
-                            type="error",
-                        )
-                        dc.clear_polylines()
-                        continue
-                    add_or_remove(line_markers, action, geom["coordinates"])
-
-                elif geom_type in ("Polygon", "MultiPolygon"):
-                    if action == "create" and (point_markers() or line_markers()):
-                        ui.notification_show(
-                            "Can't mix a polygon with existing markers/line — clear it first.",
-                            type="error",
-                        )
-                        dc.clear_polygons()
-                        dc.clear_rectangles()
-                        continue
-                    # TODO
-                    add_or_remove(shape_markers, action, geom["coordinates"])
-
-        dc.on_draw(handle_draw)
-        m.add(dc)
-
         return m
+
+    # "Show current plan" replaces whatever is being drafted on the map with
+    # read-only markers for the validated plan. Switching it off just hides
+    # those markers again — it does not restore the draft that was cleared.
+    @reactive.effect
+    def _():
+        for marker in preview_markers:
+            m.remove(marker)
+        preview_markers.clear()
+
+        current_plan = plan()
+        if not show() or not current_plan:
+            return
+
+        clear_all_layers()
+        point_markers.set([])
+        line_markers.set([])
+        shape_markers.set([])
+
+        for lat, lon in zip(current_plan["lat"], current_plan["lon"]):
+            marker = Marker(location=(float(lat), float(lon)), draggable=False)
+            m.add(marker)
+            preview_markers.append(marker)
 
     return point_markers, line_markers, shape_markers

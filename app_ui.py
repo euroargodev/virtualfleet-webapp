@@ -73,6 +73,7 @@ app_ui = ui.page_fluid(
             ui.output_ui("card_a"),
             # Option B card
             ui.output_ui("card_b"),
+            ui.input_switch(id="show_plan", label="Show current plan", value=False),
             ui.hr({"class": "section-divider"}),
 
             # Part 3 - Mission Parameters
