@@ -10,7 +10,7 @@ from shiny import reactive, render, ui
 from shiny_validate import InputValidator
 
 # import custom modules
-from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, read_deployment_plan, check_nc_file, check_config_file
+from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, read_deployment_plan, build_mission_config, read_mission_config, check_nc_file, check_config_file
 from virtualfleet_webapp.view.module_map import map_server
 
 def server(input, output, session):
@@ -25,6 +25,10 @@ def server(input, output, session):
     deployment_points = reactive.Value([])  # Option A: drawn/placed on the map
     uploaded_plan = reactive.Value(None)    # Option B: parsed from an uploaded file
     last_validated_option = reactive.Value(None)  # "A" or "B", whichever was last validated
+
+    mission_config = reactive.Value(None)          # "same": built from the mission inputs
+    uploaded_mission_config = reactive.Value(None) # "different": parsed from an uploaded file
+    last_validated_mission_option = reactive.Value(None)  # "same" or "different"
 
     ########################################################
     # Part 1 - Speed field and config file for the sidebar #
@@ -119,7 +123,6 @@ def server(input, output, session):
                 "lon": np.array([p["lon"] for p in points]),
                 "time": np.array([t] * len(points)),
             }
-
         return None
 
     ###############################################
@@ -163,8 +166,12 @@ def server(input, output, session):
                     ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"), value=0.09, update_on='blur'),
                 ),
             ),
+            ui.input_action_button(
+                id="validate_mission_same", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate mission'),
+                style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
+            ),
         )
-    
+
     @render.ui
     def card_different():
         selected = input.mission_mode() == "different"
@@ -182,8 +189,55 @@ def server(input, output, session):
         return ui.div(
             {"class": card_class},
             header,
-            ui.input_file(id="mission_config_file", label="", accept=[".geojson"]), 
+            ui.input_file(id="mission_config_file", label="", accept=[".json"]),
+            ui.input_action_button(
+                id="validate_mission_different", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate mission'),
+                style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
+            ),
         )
+
+    # Reflects whichever mission source was last validated, regardless of
+    # which card is currently displayed in the sidebar.
+    @reactive.calc
+    def last_validated_mission_config():
+        option = last_validated_mission_option()
+
+        if option == "same":
+            return mission_config()
+        if option == "different":
+            return uploaded_mission_config()
+
+        return None
+
+    @reactive.effect
+    @reactive.event(input.validate_mission_same)
+    def _():
+        config = build_mission_config(
+            cycle_duration=input.cycle_duration(),
+            life_expectancy=input.lifespan(),
+            parking_depth=input.parking_depth(),
+            profile_depth=input.profile_depth(),
+            vertical_speed=input.vertical_speed(),
+        )
+        mission_config.set(config)
+        last_validated_mission_option.set("same")
+        ui.notification_show("Mission OK", type="message")
+
+    @reactive.effect
+    @reactive.event(input.validate_mission_different)
+    def _():
+        file = input.mission_config_file()
+        if not file:
+            ui.notification_show("Upload a mission config file first.", type="error")
+            return
+        try:
+            configs = read_mission_config(file[0]["datapath"])
+        except Exception:
+            ui.notification_show("Could not read the mission config file.", type="error")
+            return
+        uploaded_mission_config.set(configs)
+        last_validated_mission_option.set("different")
+        ui.notification_show("Mission OK", type="message")
 
     ###############################################
     # Map module part (see modules/module_map.py) #

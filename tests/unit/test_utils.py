@@ -1,12 +1,16 @@
 import datetime
 import json
 
+import numpy as np
 import pytest
 
 from virtualfleet_webapp.logic.utils import (
     build_geojson,
+    build_mission_config,
     check_config_file,
     interpolate_along_line,
+    read_deployment_plan,
+    read_mission_config,
     resolve_deployment_points,
 )
 
@@ -112,9 +116,96 @@ class TestBuildGeojson:
         feature = geojson["features"][0]
         assert feature["type"] == "Feature"
         assert feature["geometry"] == {"type": "Point", "coordinates": [2.5, 1.5]}
-        assert feature["properties"]["timestamp"] == "2026-01-15T00:00:00"
+        assert feature["properties"]["timestamp"] == "2026-01-15"
         assert feature["properties"]["depth"] == 0
 
     def test_empty_points_produces_empty_feature_list(self):
         geojson = build_geojson([], datetime.date(2026, 1, 15))
         assert geojson["features"] == []
+
+
+class TestReadDeploymentPlan:
+    def test_reads_a_geojson_plan_into_columnar_arrays(self, tmp_path):
+        points = [{"lat": 1.5, "lon": 2.5}, {"lat": -3.0, "lon": 4.0}]
+        geojson = build_geojson(points, datetime.date(2026, 1, 15))
+        path = tmp_path / "plan.geojson"
+        path.write_text(json.dumps(geojson))
+
+        plan = read_deployment_plan(str(path))
+
+        assert list(plan["lat"]) == [1.5, -3.0]
+        assert list(plan["lon"]) == [2.5, 4.0]
+        assert list(plan["time"]) == [np.datetime64("2026-01-15")] * 2
+
+    def test_empty_features_produce_empty_arrays(self, tmp_path):
+        geojson = build_geojson([], datetime.date(2026, 1, 15))
+        path = tmp_path / "plan.geojson"
+        path.write_text(json.dumps(geojson))
+
+        plan = read_deployment_plan(str(path))
+
+        assert len(plan["lat"]) == 0
+        assert len(plan["lon"]) == 0
+        assert len(plan["time"]) == 0
+
+
+class TestBuildMissionConfig:
+    def test_produces_the_expected_document_shape(self):
+        config = build_mission_config(
+            cycle_duration=240,
+            life_expectancy=200,
+            parking_depth=1000,
+            profile_depth=2000,
+            vertical_speed=0.09,
+        )
+
+        assert config["version"] == "2.0"
+        assert config["name"] == "default"
+        assert "created" in config
+        assert config["$schema"].startswith("https://")
+        assert len(config["parameters"]) == 5
+
+    def test_uses_the_given_name(self):
+        config = build_mission_config(
+            cycle_duration=240, life_expectancy=200, parking_depth=1000,
+            profile_depth=2000, vertical_speed=0.09, name="float_0",
+        )
+        assert config["name"] == "float_0"
+
+    def test_parameter_values_and_types(self):
+        config = build_mission_config(
+            cycle_duration=240, life_expectancy=200, parking_depth=1000,
+            profile_depth=2000, vertical_speed=0.09,
+        )
+        values = {p["name"]: p["value"] for p in config["parameters"]}
+
+        assert values["cycle_duration"] == 240.0
+        assert values["life_expectancy"] == 200
+        assert isinstance(values["life_expectancy"], int)
+        assert values["parking_depth"] == 1000.0
+        assert values["profile_depth"] == 2000.0
+        assert values["vertical_speed"] == 0.09
+
+
+class TestReadMissionConfig:
+    def test_reads_a_list_of_configs(self, tmp_path):
+        configs = [
+            build_mission_config(
+                cycle_duration=240, life_expectancy=200, parking_depth=depth,
+                profile_depth=2000, vertical_speed=0.09, name=f"float_{i}",
+            )
+            for i, depth in enumerate([100, 200, 500])
+        ]
+        path = tmp_path / "mission.json"
+        path.write_text(json.dumps(configs))
+
+        result = read_mission_config(str(path))
+
+        assert [c["name"] for c in result] == ["float_0", "float_1", "float_2"]
+
+    def test_raises_when_file_is_not_a_json_array(self, tmp_path):
+        path = tmp_path / "mission.json"
+        path.write_text(json.dumps({"not": "a list"}))
+
+        with pytest.raises(ValueError):
+            read_mission_config(str(path))

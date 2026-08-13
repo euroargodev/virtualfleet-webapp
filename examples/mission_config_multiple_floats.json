@@ -1,0 +1,292 @@
+[
+  {
+    "created": "2026-08-13T16:08:32.520352+00:00",
+    "version": "2.0",
+    "name": "float_0",
+    "parameters": [
+      {
+        "name": "cycle_duration",
+        "value": 240.0,
+        "description": "Maximum length of float complete cycle",
+        "meta": {
+          "unit": "hours",
+          "dtype": "float",
+          "techkey": "CONFIG_CycleTime_hours"
+        }
+      },
+      {
+        "name": "life_expectancy",
+        "value": 200,
+        "description": "Maximum number of completed cycle",
+        "meta": {
+          "unit": "cycle",
+          "dtype": "int",
+          "techkey": "CONFIG_MaxCycles_NUMBER"
+        }
+      },
+      {
+        "name": "parking_depth",
+        "value": 100.0,
+        "description": "Drifting depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ParkPressure_dbar"
+        }
+      },
+      {
+        "name": "profile_depth",
+        "value": 2000.0,
+        "description": "Maximum profile depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ProfilePressure_dbar"
+        }
+      },
+      {
+        "name": "vertical_speed",
+        "value": 0.09,
+        "description": "Vertical profiling speed",
+        "meta": {
+          "unit": "m/s",
+          "dtype": "float",
+          "techkey": ""
+        }
+      }
+    ],
+    "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json"
+  },
+  {
+    "created": "2026-08-13T16:08:32.520571+00:00",
+    "version": "2.0",
+    "name": "float_1",
+    "parameters": [
+      {
+        "name": "cycle_duration",
+        "value": 240.0,
+        "description": "Maximum length of float complete cycle",
+        "meta": {
+          "unit": "hours",
+          "dtype": "float",
+          "techkey": "CONFIG_CycleTime_hours"
+        }
+      },
+      {
+        "name": "life_expectancy",
+        "value": 200,
+        "description": "Maximum number of completed cycle",
+        "meta": {
+          "unit": "cycle",
+          "dtype": "int",
+          "techkey": "CONFIG_MaxCycles_NUMBER"
+        }
+      },
+      {
+        "name": "parking_depth",
+        "value": 200.0,
+        "description": "Drifting depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ParkPressure_dbar"
+        }
+      },
+      {
+        "name": "profile_depth",
+        "value": 2000.0,
+        "description": "Maximum profile depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ProfilePressure_dbar"
+        }
+      },
+      {
+        "name": "vertical_speed",
+        "value": 0.09,
+        "description": "Vertical profiling speed",
+        "meta": {
+          "unit": "m/s",
+          "dtype": "float",
+          "techkey": ""
+        }
+      }
+    ],
+    "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json"
+  },
+  {
+    "created": "2026-08-13T16:08:32.520573+00:00",
+    "version": "2.0",
+    "name": "float_2",
+    "parameters": [
+      {
+        "name": "cycle_duration",
+        "value": 240.0,
+        "description": "Maximum length of float complete cycle",
+        "meta": {
+          "unit": "hours",
+          "dtype": "float",
+          "techkey": "CONFIG_CycleTime_hours"
+        }
+      },
+      {
+        "name": "life_expectancy",
+        "value": 200,
+        "description": "Maximum number of completed cycle",
+        "meta": {
+          "unit": "cycle",
+          "dtype": "int",
+          "techkey": "CONFIG_MaxCycles_NUMBER"
+        }
+      },
+      {
+        "name": "parking_depth",
+        "value": 500.0,
+        "description": "Drifting depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ParkPressure_dbar"
+        }
+      },
+      {
+        "name": "profile_depth",
+        "value": 2000.0,
+        "description": "Maximum profile depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ProfilePressure_dbar"
+        }
+      },
+      {
+        "name": "vertical_speed",
+        "value": 0.09,
+        "description": "Vertical profiling speed",
+        "meta": {
+          "unit": "m/s",
+          "dtype": "float",
+          "techkey": ""
+        }
+      }
+    ],
+    "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json"
+  },
+  {
+    "created": "2026-08-13T16:08:32.520574+00:00",
+    "version": "2.0",
+    "name": "float_3",
+    "parameters": [
+      {
+        "name": "cycle_duration",
+        "value": 240.0,
+        "description": "Maximum length of float complete cycle",
+        "meta": {
+          "unit": "hours",
+          "dtype": "float",
+          "techkey": "CONFIG_CycleTime_hours"
+        }
+      },
+      {
+        "name": "life_expectancy",
+        "value": 200,
+        "description": "Maximum number of completed cycle",
+        "meta": {
+          "unit": "cycle",
+          "dtype": "int",
+          "techkey": "CONFIG_MaxCycles_NUMBER"
+        }
+      },
+      {
+        "name": "parking_depth",
+        "value": 1000.0,
+        "description": "Drifting depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ParkPressure_dbar"
+        }
+      },
+      {
+        "name": "profile_depth",
+        "value": 2000.0,
+        "description": "Maximum profile depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ProfilePressure_dbar"
+        }
+      },
+      {
+        "name": "vertical_speed",
+        "value": 0.09,
+        "description": "Vertical profiling speed",
+        "meta": {
+          "unit": "m/s",
+          "dtype": "float",
+          "techkey": ""
+        }
+      }
+    ],
+    "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json"
+  },
+  {
+    "created": "2026-08-13T16:08:32.520576+00:00",
+    "version": "2.0",
+    "name": "float_4",
+    "parameters": [
+      {
+        "name": "cycle_duration",
+        "value": 240.0,
+        "description": "Maximum length of float complete cycle",
+        "meta": {
+          "unit": "hours",
+          "dtype": "float",
+          "techkey": "CONFIG_CycleTime_hours"
+        }
+      },
+      {
+        "name": "life_expectancy",
+        "value": 200,
+        "description": "Maximum number of completed cycle",
+        "meta": {
+          "unit": "cycle",
+          "dtype": "int",
+          "techkey": "CONFIG_MaxCycles_NUMBER"
+        }
+      },
+      {
+        "name": "parking_depth",
+        "value": 1500.0,
+        "description": "Drifting depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ParkPressure_dbar"
+        }
+      },
+      {
+        "name": "profile_depth",
+        "value": 2000.0,
+        "description": "Maximum profile depth",
+        "meta": {
+          "unit": "m",
+          "dtype": "float",
+          "techkey": "CONFIG_ProfilePressure_dbar"
+        }
+      },
+      {
+        "name": "vertical_speed",
+        "value": 0.09,
+        "description": "Vertical profiling speed",
+        "meta": {
+          "unit": "m/s",
+          "dtype": "float",
+          "techkey": ""
+        }
+      }
+    ],
+    "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json"
+  }
+]

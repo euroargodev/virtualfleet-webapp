@@ -1,4 +1,5 @@
 from shiny import ui
+from datetime import datetime, timezone
 import numpy as np
 import os
 import json
@@ -115,7 +116,7 @@ def build_geojson(points, start_date):
         ],
     }
 
-
+# Deployment plan
 def read_deployment_plan(filepath):
     """Read a deployment-plan GeoJSON file return it in the columnar format expected by the simulation:
     {'lat': array, 'lon': array, 'time': array}.
@@ -135,3 +136,62 @@ def read_deployment_plan(filepath):
         "lon": np.array(lons),
         "time": np.array(times),
     }
+
+# Mission parameters
+def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile_depth, vertical_speed, name="default"):
+    """Build a VirtualFleet float configuration JSON from the "same mission
+    for all floats" inputs (cycle_duration, lifespan, parking_depth,
+    profile_depth, vertical_speed).
+    """
+    return {
+        "created": datetime.now(timezone.utc).isoformat(),
+        "version": "2.0",
+        "name": name,
+        "parameters": [
+            {
+                "name": "cycle_duration",
+                "value": float(cycle_duration),
+                "description": "Maximum length of float complete cycle",
+                "meta": {"unit": "hours", "dtype": "float", "techkey": "CONFIG_CycleTime_hours"},
+            },
+            {
+                "name": "life_expectancy",
+                "value": int(life_expectancy),
+                "description": "Maximum number of completed cycle",
+                "meta": {"unit": "cycle", "dtype": "int", "techkey": "CONFIG_MaxCycles_NUMBER"},
+            },
+            {
+                "name": "parking_depth",
+                "value": float(parking_depth),
+                "description": "Drifting depth",
+                "meta": {"unit": "m", "dtype": "float", "techkey": "CONFIG_ParkPressure_dbar"},
+            },
+            {
+                "name": "profile_depth",
+                "value": float(profile_depth),
+                "description": "Maximum profile depth",
+                "meta": {"unit": "m", "dtype": "float", "techkey": "CONFIG_ProfilePressure_dbar"},
+            },
+            {
+                "name": "vertical_speed",
+                "value": float(vertical_speed),
+                "description": "Vertical profiling speed",
+                "meta": {"unit": "m/s", "dtype": "float", "techkey": ""},
+            },
+        ],
+        "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json",
+    }
+
+
+def read_mission_config(filepath):
+    """Read a "different mission per float" file: a JSON array of VirtualFleet
+    float configuration documents (as produced by build_mission_config), one
+    per float, in the same order as the deployment plan.
+    """
+    with open(filepath, "r") as f:
+        configs = json.load(f)
+
+    if not isinstance(configs, list):
+        raise ValueError("Mission config file must contain a JSON array of configurations.")
+
+    return configs

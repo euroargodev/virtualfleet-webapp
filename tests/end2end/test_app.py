@@ -53,9 +53,43 @@ def test_mission_mode_toggle(page: Page, app: ShinyAppProc) -> None:
 def test_validate_plan_without_any_geometry_shows_an_error(page: Page, app: ShinyAppProc) -> None:
     page.goto(app.url)
 
-    controller.InputActionButton(page, "validate_plan").click()
+    controller.InputActionButton(page, "validate_plan_a").click()
 
     notification = page.locator("#shiny-notification-panel .shiny-notification-content-text")
     expect(notification).to_contain_text(
         "Place markers, draw a deployment line, or draw a polygon first."
     )
+
+
+def test_validate_plan_b_without_a_file_shows_an_error(page: Page, app: ShinyAppProc) -> None:
+    page.goto(app.url)
+    option_header(page, "Option B").click()
+
+    controller.InputActionButton(page, "validate_plan_b").click()
+
+    notification = page.locator("#shiny-notification-panel .shiny-notification-content-text")
+    expect(notification).to_contain_text("Upload a .geojson file first.")
+
+
+def test_show_current_plan_switch_is_visible(page: Page, app: ShinyAppProc) -> None:
+    page.goto(app.url)
+    controller.InputSwitch(page, "show_plan").expect.to_be_visible()
+
+
+def test_validate_mission_same_shows_confirmation(page: Page, app: ShinyAppProc) -> None:
+    page.goto(app.url)
+
+    controller.InputActionButton(page, "validate_mission_same").click()
+
+    notification = page.locator("#shiny-notification-panel .shiny-notification-content-text")
+    expect(notification).to_contain_text("Mission OK")
+
+
+def test_validate_mission_different_without_a_file_shows_an_error(page: Page, app: ShinyAppProc) -> None:
+    page.goto(app.url)
+    option_header(page, "Different mission per float").click()
+
+    controller.InputActionButton(page, "validate_mission_different").click()
+
+    notification = page.locator("#shiny-notification-panel .shiny-notification-content-text")
+    expect(notification).to_contain_text("Upload a mission config file first.")
