@@ -1,6 +1,5 @@
 from shiny import ui
 import numpy as np
-import datetime
 import os
 import json
 
@@ -103,7 +102,7 @@ def resolve_deployment_points(points, lines, shapes, num_floats):
 
 
 def build_geojson(points, start_date):
-    timestamp = datetime.datetime.combine(start_date, datetime.time.min).isoformat() # Check required format
+    timestamp = start_date.strftime("%Y-%m-%d")
     return {
         "type": "FeatureCollection",
         "features": [
@@ -114,4 +113,25 @@ def build_geojson(points, start_date):
             }
             for p in points
         ],
+    }
+
+
+def read_deployment_plan(filepath):
+    """Read a deployment-plan GeoJSON file return it in the columnar format expected by the simulation:
+    {'lat': array, 'lon': array, 'time': array}.
+    """
+    with open(filepath, "r") as f:
+        geojson = json.load(f)
+
+    lats, lons, times = [], [], []
+    for feature in geojson["features"]:
+        lon, lat = feature["geometry"]["coordinates"]
+        lats.append(lat)
+        lons.append(lon)
+        times.append(np.datetime64(feature["properties"]["timestamp"]))
+
+    return {
+        "lat": np.array(lats),
+        "lon": np.array(lons),
+        "time": np.array(times),
     }

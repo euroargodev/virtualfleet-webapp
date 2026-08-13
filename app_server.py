@@ -4,12 +4,13 @@ Server logic
 
 import json
 import uuid
+import numpy as np
 
 from shiny import reactive, render, ui
-from shiny_validate import InputValidator, check
+from shiny_validate import InputValidator
 
 # import custom modules
-from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, check_nc_file, check_config_file
+from virtualfleet_webapp.logic.utils import build_geojson, resolve_deployment_points, read_deployment_plan, check_nc_file, check_config_file
 from virtualfleet_webapp.view.module_map import map_server
 
 def server(input, output, session):
@@ -21,7 +22,8 @@ def server(input, output, session):
 
     # Reactive state for the deployment plan, shared across the sidebar (Part 1)
     # and the map/export logic (Part 3).
-    deployment_points = reactive.Value([])
+    deployment_points = reactive.Value([])  # Option A: drawn/placed on the map
+    uploaded_plan = reactive.Value(None)    # Option B: parsed from an uploaded file
 
     ########################################################
     # Part 1 - Speed field and config file for the sidebar #
@@ -63,7 +65,7 @@ def server(input, output, session):
             ui.input_numeric(id="num_floats", label=ui.span("Number of floats", style="font-size: 0.90rem;"), value=0),
             ui.input_date(id="start_date", label=ui.span("Start date", style="font-size: 0.90rem;")),
             ui.input_action_button(
-                id="validate_plan", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
+                id="validate_plan_a", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
             ),
             ui.download_button(
@@ -90,7 +92,28 @@ def server(input, output, session):
             {"class": card_class},
             header,
             ui.input_file(id="plan_file", label="", accept=[".geojson"]),
+            ui.input_action_button(
+                id="validate_plan_b", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
+                style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
+            ),
         )
+
+    # Will invalidate as soon as it is used.
+    @reactive.calc
+    def last_validated_plan():
+        if input.deploy_option() == "B":
+            return uploaded_plan()
+
+        points = deployment_points()
+        start = input.start_date()
+        if not points or not start:
+            return None
+        t = np.datetime64(start)
+        return {
+            "lat": np.array([p["lat"] for p in points]),
+            "lon": np.array([p["lon"] for p in points]),
+            "time": np.array([t] * len(points)),
+        }
 
     ###############################################
     # Part 3 - Mission parameters for the sidebar #
@@ -152,7 +175,7 @@ def server(input, output, session):
         return ui.div(
             {"class": card_class},
             header,
-            ui.input_file(id="mission_config_file", label="", accept=[".csv", ".txt"]), # should be a python dict()
+            ui.input_file(id="mission_config_file", label="", accept=[".geojson"]), 
         )
 
     ###############################################
@@ -161,7 +184,7 @@ def server(input, output, session):
     point_markers, line_markers, shape_markers = map_server("map")
 
     @reactive.effect
-    @reactive.event(input.validate_plan)
+    @reactive.event(input.validate_plan_a)
     def _():
         try:
             points = resolve_deployment_points(
@@ -171,6 +194,21 @@ def server(input, output, session):
             ui.notification_show(str(error), type="error")
             return
         deployment_points.set(points)
+        ui.notification_show("Plan OK", type="message")
+
+    @reactive.effect
+    @reactive.event(input.validate_plan_b)
+    def _():
+        file = input.plan_file()
+        if not file:
+            ui.notification_show("Upload a .geojson file first.", type="error")
+            return
+        try:
+            plan = read_deployment_plan(file[0]["datapath"])
+        except Exception:
+            ui.notification_show("Could not read the uploaded plan.", type="error")
+            return
+        uploaded_plan.set(plan)
         ui.notification_show("Plan OK", type="message")
 
     @render.download_button(filename=lambda: f"deployment_plan_{uuid.uuid4().hex}.geojson")
