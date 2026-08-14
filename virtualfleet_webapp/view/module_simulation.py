@@ -45,7 +45,7 @@ def simulation_ui():
         ),
         ui.input_task_button(id="run_simulation", label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'), class_="btn-primary", label_busy="Running..."),
         ui.output_ui("simulation_progress"),
-        ui.download_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light"),
+        ui.output_ui("save_simulation_slot"),
     )
 
 
@@ -122,6 +122,20 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             input.writing_step(),
             input.simulation_name()
         )
+
+    # The actual download link only exists in the DOM once a run has
+    # succeeded — a disabled placeholder button sits there otherwise, so
+    # there's no clickable link that could kick off a broken/empty download.
+    @render.ui
+    def save_simulation_slot():
+        if run_simulation.status() != "success":
+            return ui.input_action_button(
+                id="save_simulation_disabled",
+                label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'),
+                class_="btn-light",
+                disabled=True,
+            )
+        return ui.download_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light")
 
     @render.download_button(filename=lambda: f"{input.simulation_name()}.zip")
     def save_simulation():

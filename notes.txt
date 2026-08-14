@@ -22,3 +22,4 @@ Tester sur HPC (more poweeeeer) -> need SSH tunnel for localhost app
 
 Don't forget
 - Run ruff on repo regularly
+- CI (to be done)

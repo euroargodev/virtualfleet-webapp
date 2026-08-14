@@ -112,7 +112,13 @@ def test_simulation_parameters_defaults_are_visible(page: Page, app: ShinyAppPro
     controller.InputNumeric(page, "simulation-writing_step").expect_value("1")
     controller.InputText(page, "simulation-simulation_name").expect_value("default")
     expect(controller.InputTaskButton(page, "simulation-run_simulation").loc).to_be_visible()
-    expect(controller.DownloadButton(page, "simulation-save_simulation").loc).to_be_visible()
+
+    # Before any successful run, Save is a disabled placeholder (not the real
+    # download link) so there's nothing clickable that could produce a broken
+    # download.
+    save_button = controller.InputActionButton(page, "simulation-save_simulation_disabled")
+    save_button.expect.to_be_visible()
+    save_button.expect.to_be_disabled()
 
 
 def test_run_simulation_without_a_config_file_shows_an_error(page: Page, app: ShinyAppProc) -> None:
