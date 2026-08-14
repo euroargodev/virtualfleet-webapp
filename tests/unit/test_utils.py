@@ -8,7 +8,9 @@ from virtualfleet_webapp.logic.utils import (
     build_geojson,
     build_mission_config,
     check_config_file,
+    flatten_mission_config,
     interpolate_along_line,
+    read_config_file,
     read_deployment_plan,
     read_mission_config,
     resolve_deployment_points,
@@ -53,6 +55,18 @@ class TestCheckConfigFile:
         error = check_config_file(_write_config(tmp_path, content))
         assert error is not None
         assert "depth" in error
+
+    def test_no_file_uploaded_is_valid(self):
+        assert check_config_file(None) is None
+
+
+class TestReadConfigFile:
+    def test_reads_the_config_file_contents(self, tmp_path):
+        config = {"variables": FULL_VARIABLES, "dimensions": FULL_DIMENSIONS}
+        path = tmp_path / "config.json"
+        path.write_text(json.dumps(config))
+
+        assert read_config_file(str(path)) == config
 
 
 class TestInterpolateAlongLine:
@@ -209,3 +223,35 @@ class TestReadMissionConfig:
 
         with pytest.raises(ValueError):
             read_mission_config(str(path))
+
+
+class TestFlattenMissionConfig:
+    def test_flattens_a_single_config_document(self):
+        config = build_mission_config(
+            cycle_duration=240, life_expectancy=200, parking_depth=1000,
+            profile_depth=2000, vertical_speed=0.09,
+        )
+
+        flat = flatten_mission_config(config)
+
+        assert flat == {
+            "cycle_duration": 240.0,
+            "life_expectancy": 200,
+            "parking_depth": 1000.0,
+            "profile_depth": 2000.0,
+            "vertical_speed": 0.09,
+        }
+
+    def test_flattens_a_list_of_config_documents(self):
+        configs = [
+            build_mission_config(
+                cycle_duration=240, life_expectancy=200, parking_depth=depth,
+                profile_depth=2000, vertical_speed=0.09, name=f"float_{i}",
+            )
+            for i, depth in enumerate([100, 200, 500])
+        ]
+
+        flat = flatten_mission_config(configs)
+
+        assert [f["parking_depth"] for f in flat] == [100.0, 200.0, 500.0]
+        assert all(f["cycle_duration"] == 240.0 for f in flat)
