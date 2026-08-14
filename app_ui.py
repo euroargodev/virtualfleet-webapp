@@ -3,12 +3,12 @@ Application User Interface
 """
 
 from shiny import ui
-from virtualfleet_webapp.logic.utils import section_title
 
 # import custom modules
 from virtualfleet_webapp.view.module_speed_field import speed_field_ui
 from virtualfleet_webapp.view.module_deployment_plan import deployment_plan_ui, deployment_plan_map_ui
 from virtualfleet_webapp.view.module_mission import mission_config_ui
+from virtualfleet_webapp.view.module_simulation import simulation_ui
 
 app_ui = ui.page_fluid(
     # Style
@@ -53,31 +53,16 @@ app_ui = ui.page_fluid(
         ui.sidebar(
             # Part 1 - Speed Field
             speed_field_ui("speed_field"),
-
             # Part 2 - Deployment Plan
             deployment_plan_ui("deployment_plan"),
-
             # Part 3 - Mission Parameters
             mission_config_ui("mission_config"),
-
             # Part 4 - Simulation Parameters
-            section_title(4, "Simulation Parameters", tooltip="TBD"),
-
-            ui.div(
-                {"class": "mission-grid"},
-                ui.div(ui.input_numeric(id="simulation_time", label=ui.span("Simulation length (days)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
-                ui.div(ui.input_numeric(id="time_step", label=ui.span("Time step (minutes)", style="font-size: 0.90rem;"), value=5, update_on='blur')),
-                ui.div(
-                    {"class": "full-row"},
-                    ui.input_numeric(id="writing_step", label=ui.span("Output writing time step (hours)", style="font-size: 0.90rem;"), value=1, update_on='blur'),
-                ),
-            ),
-            ui.input_task_button(id="run_simulation", label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'), class_="btn-primary", label_busy="Running..."),
-            ui.input_task_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light", label_busy="Saving..."),
-        # Sidebar layout options
-        bg="",
-        width=400,
-        gap=10 # Vertical spacing in the sidebar
+            simulation_ui("simulation"),
+            # Sidebar layout options
+            bg="",
+            width=400,
+            gap=10 # Vertical spacing in the sidebar
         ),
         # Main panel content
         ui.navset_card_underline(

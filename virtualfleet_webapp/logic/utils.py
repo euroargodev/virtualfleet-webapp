@@ -4,7 +4,7 @@ import numpy as np
 import os
 import json
 
-# Sidebar
+# Generic functions
 def section_title(number, text, tooltip=None):
     """Numbered circle badge + header used at the top of each sidebar section."""
     children = [
@@ -67,7 +67,16 @@ def check_config_file(value):
 
     return None
 
-# Map module
+def read_config_file(config_file):
+    """Read a variable mapping configuration file. All checks are done in check_config_file.
+    """
+    with open(config_file, "r") as f:
+        configs = json.load(f)
+
+    return configs
+
+
+# Deployment plan module
 def interpolate_along_line(coords, n):
     """Evenly space n points between two [lon, lat] endpoints (inclusive)."""
     (lon1, lat1), (lon2, lat2) = coords
@@ -116,7 +125,6 @@ def build_geojson(points, start_date):
         ],
     }
 
-# Deployment plan
 def read_deployment_plan(filepath):
     """Read a deployment-plan GeoJSON file return it in the columnar format expected by the simulation:
     {'lat': array, 'lon': array, 'time': array}.
@@ -137,7 +145,7 @@ def read_deployment_plan(filepath):
         "time": np.array(times),
     }
 
-# Mission parameters
+# Mission config module
 def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile_depth, vertical_speed, name="default"):
     """Build a VirtualFleet float configuration JSON from the "same mission
     for all floats" inputs (cycle_duration, lifespan, parking_depth,
@@ -195,3 +203,13 @@ def read_mission_config(filepath):
         raise ValueError("Mission config file must contain a JSON array of configurations.")
 
     return configs
+
+
+def flatten_mission_config(config):
+    """Flatten one or more VF-ArgoFloat-Configuration documents (as produced by
+    build_mission_config / read_mission_config) into the flat parameter dicts
+    expected by VirtualFleet's `mission` argument.
+    """
+    if isinstance(config, list):
+        return [flatten_mission_config(c) for c in config]
+    return {p["name"]: p["value"] for p in config["parameters"]}

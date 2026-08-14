@@ -44,7 +44,7 @@ def mission_config_server(input, output, session):
         card_class = "option-card selected" if selected else "option-card collapsed"
  
         header = ui.div(
-            {"class": "option-header", "onclick": "Shiny.setInputValue('pick_same', Math.random())"},
+            {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_same')}', Math.random())"},
             ui.tags.i(class_="fa-solid fa-sliders"),
             "Same mission for all floats",
         )
@@ -78,7 +78,7 @@ def mission_config_server(input, output, session):
         card_class = "option-card selected" if selected else "option-card collapsed"
  
         header = ui.div(
-            {"class": "option-header", "onclick": "Shiny.setInputValue('pick_different', Math.random())"},
+            {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_different')}', Math.random())"},
             ui.tags.i(class_="fa-solid fa-file-upload"),
             "Different mission per float",
         )
@@ -138,3 +138,5 @@ def mission_config_server(input, output, session):
         uploaded_mission_config.set(configs)
         last_validated_mission_option.set("different")
         ui.notification_show("Mission OK", type="message")
+
+    return last_validated_mission_config

@@ -305,3 +305,5 @@ def deployment_plan_server(input, output, session):
             marker = Marker(location=(float(lat), float(lon)), draggable=False)
             m.add(marker)
             preview_markers.append(marker)
+
+    return last_validated_plan

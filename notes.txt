@@ -11,7 +11,14 @@ Info
 - check geojson file here https://www.chatdb.ai/tools/geojson-viewer
 
 brand.yml
-typography -> check with IFREMER for that (paid license?)
+- typography -> check with IFREMER for that (paid license?)
 
 Parcels
-VFleet.plot_positions() does not work anymore, Parcels change their code all the time, it often breaks stuff.
+- VFleet.plot_positions() does not work anymore, Parcels change their code all the time, it often breaks stuff.
+
+Simulation
+- Being able to cancel a simulation? With a button
+
+Mac/Linux, no issue but needs to be tested on Windows unfortunately
+
+Tester sur HPC (more poweeeeer)
