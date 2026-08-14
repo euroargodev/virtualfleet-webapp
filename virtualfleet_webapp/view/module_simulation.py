@@ -34,6 +34,14 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
         return await asyncio.to_thread(_run_blocking, plan, fieldset, mission, duration, step, record, output_file)
 
     @reactive.effect
+    def _():
+        if run_simulation.status() == "error":
+            try:
+                run_simulation.result()
+            except Exception as e:
+                ui.notification_show(f"Simulation failed: {e}", type="error")
+
+    @reactive.effect
     @reactive.event(input.run_simulation)
     def _():
         fieldset = speed_field()
