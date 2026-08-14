@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from virtualfleet_webapp.logic.utils import (
+    build_deployment_plan_geojson,
     build_geojson,
     build_mission_config,
     check_config_file,
@@ -161,6 +162,49 @@ class TestReadDeploymentPlan:
         assert len(plan["lat"]) == 0
         assert len(plan["lon"]) == 0
         assert len(plan["time"]) == 0
+
+
+class TestBuildDeploymentPlanGeojson:
+    def test_produces_a_feature_per_point_with_day_precision_timestamp(self):
+        plan = {
+            "lat": np.array([1.5, -3.0]),
+            "lon": np.array([2.5, 4.0]),
+            "time": np.array([np.datetime64("2026-01-15")] * 2),
+        }
+
+        geojson = build_deployment_plan_geojson(plan)
+
+        assert geojson["type"] == "FeatureCollection"
+        assert len(geojson["features"]) == 2
+        feature = geojson["features"][0]
+        assert feature["geometry"] == {"type": "Point", "coordinates": [2.5, 1.5]}
+        assert feature["properties"]["timestamp"] == "2026-01-15"
+
+    def test_timestamp_keeps_day_precision_even_with_nanosecond_input(self):
+        plan = {
+            "lat": np.array([1.5]),
+            "lon": np.array([2.5]),
+            "time": np.array([np.datetime64("2026-01-15T00:00:00.000000000")]),
+        }
+
+        geojson = build_deployment_plan_geojson(plan)
+
+        assert geojson["features"][0]["properties"]["timestamp"] == "2026-01-15"
+
+    def test_round_trips_through_read_deployment_plan_with_day_precision(self, tmp_path):
+        points = [{"lat": 1.5, "lon": 2.5}]
+        original = build_geojson(points, datetime.date(2026, 1, 15))
+        path = tmp_path / "plan.geojson"
+        path.write_text(json.dumps(original))
+
+        plan = read_deployment_plan(str(path))
+        rebuilt = build_deployment_plan_geojson(plan)
+
+        assert rebuilt["features"][0]["properties"]["timestamp"] == "2026-01-15"
+
+    def test_empty_plan_produces_empty_feature_list(self):
+        plan = {"lat": np.array([]), "lon": np.array([]), "time": np.array([], dtype="datetime64[D]")}
+        assert build_deployment_plan_geojson(plan)["features"] == []
 
 
 class TestBuildMissionConfig:

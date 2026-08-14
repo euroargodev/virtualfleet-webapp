@@ -112,7 +112,7 @@ def test_simulation_parameters_defaults_are_visible(page: Page, app: ShinyAppPro
     controller.InputNumeric(page, "simulation-writing_step").expect_value("1")
     controller.InputText(page, "simulation-simulation_name").expect_value("default")
     expect(controller.InputTaskButton(page, "simulation-run_simulation").loc).to_be_visible()
-    expect(controller.InputTaskButton(page, "simulation-save_simulation").loc).to_be_visible()
+    expect(controller.DownloadButton(page, "simulation-save_simulation").loc).to_be_visible()
 
 
 def test_run_simulation_without_a_config_file_shows_an_error(page: Page, app: ShinyAppProc) -> None:

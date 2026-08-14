@@ -1,11 +1,17 @@
 import asyncio
 import contextvars
+import io
+import json
+import os
+import zipfile
 
 from shiny import ui, module, reactive, render
 from tqdm import tqdm as _tqdm_cls
 from virtualargofleet import VirtualFleet
 
-from virtualfleet_webapp.logic.utils import section_title, flatten_mission_config
+from virtualfleet_webapp.logic.utils import build_deployment_plan_geojson, flatten_mission_config, section_title
+
+SIMULATIONS_FOLDER = "./simulations/"
 
 # ContextVar holding a mutable [n, total] progress slot for the current run.
 # asyncio.to_thread copies the calling context into the worker thread, so this
@@ -39,7 +45,7 @@ def simulation_ui():
         ),
         ui.input_task_button(id="run_simulation", label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'), class_="btn-primary", label_busy="Running..."),
         ui.output_ui("simulation_progress"),
-        ui.input_task_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light", label_busy="Saving..."),
+        ui.download_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light"),
     )
 
 
@@ -51,7 +57,7 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
 
     def _run_blocking(plan, fieldset, mission, duration, step, record, output_file):
         vfleet = VirtualFleet(plan=plan, fieldset=fieldset, mission=mission)
-        vfleet.simulate(duration=duration, step=step, record=record, output=True, output_file=output_file, output_folder='./simulations/')
+        vfleet.simulate(duration=duration, step=step, record=record, output=True, output_file=output_file, output_folder=SIMULATIONS_FOLDER)
         return vfleet
 
     @ui.bind_task_button(button_id="run_simulation")
@@ -116,5 +122,45 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             input.writing_step(),
             input.simulation_name()
         )
+
+    @render.download_button(filename=lambda: f"{input.simulation_name()}.zip")
+    def save_simulation():
+        if run_simulation.status() != "success":
+            ui.notification_show("Run a simulation successfully before saving.", type="error")
+            raise Exception("No completed simulation to save yet.")
+
+        name = input.simulation_name()
+        zarr_name = name if name.endswith(".zarr") else f"{name}.zarr"
+        zarr_path = os.path.join(SIMULATIONS_FOLDER, zarr_name)
+        if not os.path.isdir(zarr_path):
+            ui.notification_show(f"Could not find simulation output at {zarr_path}.", type="error")
+            raise Exception(f"Missing zarr output: {zarr_path}")
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Simulation output (zarr store is a directory of many small files).
+            for root, _dirs, files in os.walk(zarr_path):
+                for fname in files:
+                    full_path = os.path.join(root, fname)
+                    arcname = os.path.join(zarr_name, os.path.relpath(full_path, zarr_path))
+                    zf.write(full_path, arcname)
+
+            # Deployment plan, as GeoJSON.
+            plan = deployment_plan()
+            if plan:
+                zf.writestr("deployment_plan.geojson", json.dumps(build_deployment_plan_geojson(plan), indent=2))
+
+            # Mission configuration(s).
+            config = mission_config()
+            if config:
+                zf.writestr("mission_config.json", json.dumps(config, indent=2))
+
+            # Variable mapping, read back off the built velocity field.
+            fieldset = speed_field()
+            if fieldset:
+                mapping = {"variables": fieldset.var, "dimensions": fieldset.dim}
+                zf.writestr("variable_mapping.json", json.dumps(mapping, indent=2))
+
+        yield buffer.getvalue()
 
     return run_simulation

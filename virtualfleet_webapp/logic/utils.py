@@ -145,6 +145,24 @@ def read_deployment_plan(filepath):
         "time": np.array(times),
     }
 
+
+def build_deployment_plan_geojson(plan):
+    """Serialize a validated deployment plan (columnar {'lat', 'lon', 'time'}
+    arrays, as returned by the deployment plan module) into a GeoJSON
+    FeatureCollection, one Point feature per float.
+    """
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [float(lon), float(lat)]},
+                "properties": {"timestamp": np.datetime_as_string(t, unit="D")},
+            }
+            for lat, lon, t in zip(plan["lat"], plan["lon"], plan["time"])
+        ],
+    }
+
 # Mission config module
 def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile_depth, vertical_speed, name="default"):
     """Build a VirtualFleet float configuration JSON from the "same mission
