@@ -9,6 +9,7 @@ from virtualfleet_webapp.view.module_speed_field import speed_field_ui
 from virtualfleet_webapp.view.module_deployment_plan import deployment_plan_ui, deployment_plan_map_ui
 from virtualfleet_webapp.view.module_mission import mission_config_ui
 from virtualfleet_webapp.view.module_simulation import simulation_ui
+from virtualfleet_webapp.view.module_simulated_traj import simulated_traj_ui
 
 app_ui = ui.page_fluid(
     # Style
@@ -71,7 +72,8 @@ app_ui = ui.page_fluid(
                 deployment_plan_map_ui("deployment_plan"),
             ),
             ui.nav_panel(
-                "Simulation Results"
+                "Simulation Results",
+                simulated_traj_ui("simulated_traj"),
             ),
         ),
     ),

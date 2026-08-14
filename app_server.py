@@ -7,6 +7,7 @@ from virtualfleet_webapp.view.module_speed_field import speed_field_server
 from virtualfleet_webapp.view.module_deployment_plan import deployment_plan_server
 from virtualfleet_webapp.view.module_mission import mission_config_server
 from virtualfleet_webapp.view.module_simulation import simulation_server
+from virtualfleet_webapp.view.module_simulated_traj import simulated_traj_server
 
 def server(input, output, session):
 
@@ -21,3 +22,6 @@ def server(input, output, session):
 
     # Part 4 - Simulation
     simulation_server("simulation", speed_field, deployment_plan, mission_config)
+
+    # Part 5 - Simulated trajectories
+    simulated_traj_server("simulated_traj")

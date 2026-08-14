@@ -7,9 +7,6 @@ Velocity field
 - 3 methods but we only keep the custom one so to say...
 - config file (variable mapping) -> json file OK?
 
-Info
-- check geojson file here https://www.chatdb.ai/tools/geojson-viewer
-
 brand.yml
 - typography -> check with IFREMER for that (paid license?)
 
@@ -17,8 +14,11 @@ Parcels
 - VFleet.plot_positions() does not work anymore, Parcels change their code all the time, it often breaks stuff.
 
 Simulation
-- Being able to cancel a simulation? With a button
+- Being able to cancel a simulation? With a button -> does not seem trivial (async programming), can just kill the app on the terminal
 
 Mac/Linux, no issue but needs to be tested on Windows unfortunately
 
-Tester sur HPC (more poweeeeer)
+Tester sur HPC (more poweeeeer) -> need SSH tunnel for localhost app
+
+Don't forget
+- Run ruff on repo regularly
