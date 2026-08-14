@@ -2,6 +2,8 @@ import asyncio
 from shiny import ui, module, reactive
 from ipyleaflet import Map, Polyline, ScaleControl, basemaps
 from shinywidgets import output_widget, render_widget
+import matplotlib as mpl
+import matplotlib.colors as mcolors
 import numpy as np
 import xarray as xr
 
@@ -83,15 +85,24 @@ def simulated_traj_server(input, output, session):
         if lats.size == 0:
             return
 
+        n_floats = lats.shape[0]
+        if n_floats > 1:
+            cmap = mpl.colormaps["viridis"].resampled(n_floats)
+            colors = [mcolors.to_hex(cmap(i)) for i in range(n_floats)]
+        else:
+            colors = ["#2c7fb8"]
+
         all_points = []
-        for lat_row, lon_row in zip(lats, lons):
+        for color, lat_row, lon_row in zip(colors, lats, lons):
             mask = np.isfinite(lat_row) & np.isfinite(lon_row)
             if not mask.any():
                 continue
             path = list(zip(lat_row[mask].tolist(), lon_row[mask].tolist()))
-            line = Polyline(locations=path, color="#2c7fb8", weight=2, fill=False)
+
+            line = Polyline(locations=path, color=color, weight=2, fill=False)
             m.add(line)
             trajectory_layers.append(line)
+
             all_points.extend(path)
 
         if all_points:
