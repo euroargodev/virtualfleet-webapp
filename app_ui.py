@@ -4,8 +4,11 @@ Application User Interface
 
 from shiny import ui
 from virtualfleet_webapp.logic.utils import section_title
+
 # import custom modules
-from virtualfleet_webapp.view.module_map import map_ui
+from virtualfleet_webapp.view.module_speed_field import speed_field_ui
+from virtualfleet_webapp.view.module_deployment_plan import deployment_plan_ui, deployment_plan_map_ui
+from virtualfleet_webapp.view.module_mission import mission_config_ui
 
 app_ui = ui.page_fluid(
     # Style
@@ -49,48 +52,13 @@ app_ui = ui.page_fluid(
     ui.layout_sidebar(
         ui.sidebar(
             # Part 1 - Speed Field
-            section_title(
-                1, "Speed Field",
-                tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
-            ),
-            ui.input_text(id="speed_field_path", label="", value="./data/cmems_speed_field.nc", placeholder="Path to speed field"),
-            ui.input_file(id="upload_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
-            ui.hr({"class": "section-divider"}),
+            speed_field_ui("speed_field"),
 
             # Part 2 - Deployment Plan
-            section_title(2, "Deployment Plan", tooltip="TBD"),
-            # Hidden radio group driving which card is "selected"
-            ui.div(
-                {"class": "option-radio"},
-                ui.input_radio_buttons(
-                    id="deploy_option",
-                    label=None,
-                    choices={"A": "Option A", "B": "Option B"},
-                    selected="A",
-                ),
-            ),
-            # Option A card
-            ui.output_ui("card_a"),
-            # Option B card
-            ui.output_ui("card_b"),
-            ui.input_switch(id="show_plan", label="Show current plan", value=False),
-            ui.hr({"class": "section-divider"}),
+            deployment_plan_ui("deployment_plan"),
 
             # Part 3 - Mission Parameters
-            section_title(3, "Mission Parameters", tooltip="TBD"),
-            # Hidden radio group driving which card is "selected"
-            ui.div(
-                {"class": "mission-radio"},
-                ui.input_radio_buttons(
-                    "mission_mode",
-                    None,
-                    choices={"same": "Same", "different": "Different"},
-                    selected="same",
-                ),
-            ),
-            ui.output_ui("card_same"),
-            ui.output_ui("card_different"),
-            ui.hr({"class": "section-divider"}),
+            mission_config_ui("mission_config"),
 
             # Part 4 - Simulation Parameters
             section_title(4, "Simulation Parameters", tooltip="TBD"),
@@ -115,7 +83,7 @@ app_ui = ui.page_fluid(
         ui.navset_card_underline(
             ui.nav_panel(
                 "Deployment Map",
-                map_ui("map"),
+                deployment_plan_map_ui("deployment_plan"),
             ),
             ui.nav_panel(
                 "Simulation Results"
