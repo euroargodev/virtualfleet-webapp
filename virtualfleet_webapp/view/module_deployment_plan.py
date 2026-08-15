@@ -2,15 +2,15 @@ import json
 import uuid
 
 import numpy as np
-from ipyleaflet import Map, Marker, ScaleControl, GeomanDrawControl, basemaps
-from shiny import ui, module, reactive, render
+from ipyleaflet import GeomanDrawControl, Map, Marker, ScaleControl, basemaps
+from shiny import module, reactive, render, ui
 from shinywidgets import output_widget, render_widget
 
 from virtualfleet_webapp.logic.utils import (
-    section_title,
     build_geojson,
-    resolve_deployment_points,
     read_deployment_plan,
+    resolve_deployment_points,
+    section_title,
 )
 
 
@@ -49,7 +49,7 @@ def deployment_plan_server(input, output, session):
 
     # Reactive state for the deployment plan
     deployment_points = reactive.Value([])  # Option A: drawn/placed on the map
-    uploaded_plan = reactive.Value(None)    # Option B: parsed from an uploaded file
+    uploaded_plan = reactive.Value(None)  # Option B: parsed from an uploaded file
     last_validated_option = reactive.Value(None)  # "A" or "B", whichever was last validated
 
     # Reactive state for the map's drawing layer
@@ -69,33 +69,37 @@ def deployment_plan_server(input, output, session):
     )
 
     # Add options
-    m.add(ScaleControl(position='bottomleft'))
+    m.add(ScaleControl(position="bottomleft"))
 
     # Drawing control for markers, lines and polygons, check also https://geoman.io/docs/leaflet/toolbar
     dc = GeomanDrawControl(
-        position='topright',
-        marker={'pathOptions': {}},
+        position="topright",
+        marker={"pathOptions": {}},
         circlemarker={},
-        polyline={'pathOptions': {}},
-        rectangle={'pathOptions': {}},
+        polyline={"pathOptions": {}},
+        rectangle={"pathOptions": {}},
         polygon={},
         edit=False,
         drag=True,
         cut=False,
-        rotate=False
+        rotate=False,
     )
 
     # Add or remove drawn objects
     def add_or_remove(store, action, value):
         current = store()
         if action == "create":
-            store.set(current + [value])
+            store.set([*current, value])
         elif action == "remove" and value in current:
-            current = current.copy() # needed to avoid modifying the list in place, which would not trigger a reactive update
+            current = (
+                current.copy()
+            )  # needed to avoid modifying the list in place, which would not trigger a reactive update
             current.remove(value)
             store.set(current)
 
-    def handle_draw(_control, action, geo_json): # see https://ipyleaflet.readthedocs.io/en/latest/_modules/ipyleaflet/leaflet.html#GeomanDrawControl
+    def handle_draw(
+        _control, action, geo_json
+    ):  # see https://ipyleaflet.readthedocs.io/en/latest/_modules/ipyleaflet/leaflet.html#GeomanDrawControl
 
         for feature in geo_json:
             geom = feature["geometry"]
@@ -159,7 +163,6 @@ def deployment_plan_server(input, output, session):
     def map():
         return m
 
-
     ######################
     # Deployment options #
     ######################
@@ -193,11 +196,13 @@ def deployment_plan_server(input, output, session):
             ui.input_numeric(id="num_floats", label=ui.span("Number of floats", style="font-size: 0.90rem;"), value=0),
             ui.input_date(id="start_date", label=ui.span("Start date", style="font-size: 0.90rem;")),
             ui.input_action_button(
-                id="validate_plan_a", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
+                id="validate_plan_a",
+                label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
             ),
             ui.download_button(
-                id="export_plan", label=ui.HTML('<i class="fa-solid fa-download"></i> Export deployment plan'),
+                id="export_plan",
+                label=ui.HTML('<i class="fa-solid fa-download"></i> Export deployment plan'),
                 style="width: 100%; background: var(--bs-light); color: black; border: none; margin-top: 8px;",
             ),
         )
@@ -221,7 +226,8 @@ def deployment_plan_server(input, output, session):
             header,
             ui.input_file(id="plan_file", label="", accept=[".geojson"]),
             ui.input_action_button(
-                id="validate_plan_b", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
+                id="validate_plan_b",
+                label=ui.HTML('<i class="fa-solid fa-check"></i> Validate plan'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
             ),
         )
@@ -252,9 +258,7 @@ def deployment_plan_server(input, output, session):
     @reactive.event(input.validate_plan_a)
     def _():
         try:
-            points = resolve_deployment_points(
-                point_markers(), line_markers(), shape_markers(), input.num_floats()
-            )
+            points = resolve_deployment_points(point_markers(), line_markers(), shape_markers(), input.num_floats())
         except ValueError as error:
             ui.notification_show(str(error), type="error")
             return
@@ -301,7 +305,7 @@ def deployment_plan_server(input, output, session):
         line_markers.set([])
         shape_markers.set([])
 
-        for lat, lon in zip(current_plan["lat"], current_plan["lon"]):
+        for lat, lon in zip(current_plan["lat"], current_plan["lon"], strict=True):
             marker = Marker(location=(float(lat), float(lon)), draggable=False)
             m.add(marker)
             preview_markers.append(marker)

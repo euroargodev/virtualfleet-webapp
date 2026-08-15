@@ -1,11 +1,13 @@
-from shiny import ui, module, reactive, render
+from shiny import module, reactive, render, ui
 from shiny_validate import InputValidator
+
 from virtualfleet_webapp.logic.utils import (
-    section_title, 
-    build_mission_config, 
-    check_positive_number, 
-    read_mission_config
+    build_mission_config,
+    check_positive_number,
+    read_mission_config,
+    section_title,
 )
+
 
 @module.ui
 def mission_config_ui():
@@ -23,15 +25,15 @@ def mission_config_ui():
         ),
         ui.output_ui("card_same"),
         ui.output_ui("card_different"),
-        ui.hr({"class": "section-divider"})
+        ui.hr({"class": "section-divider"}),
     )
 
 
 @module.server
 def mission_config_server(input, output, session):
 
-    mission_config = reactive.Value(None)          # "same": built from the mission inputs
-    uploaded_mission_config = reactive.Value(None) # "different": parsed from an uploaded file
+    mission_config = reactive.Value(None)  # "same": built from the mission inputs
+    uploaded_mission_config = reactive.Value(None)  # "different": parsed from an uploaded file
     last_validated_mission_option = reactive.Value(None)  # "same" or "different"
 
     def check_parking_shallower_than_profile(value):
@@ -54,7 +56,7 @@ def mission_config_server(input, output, session):
     @reactive.event(input.pick_same)
     def _():
         ui.update_radio_buttons("mission_mode", selected="same")
- 
+
     @reactive.effect
     @reactive.event(input.pick_different)
     def _():
@@ -64,32 +66,66 @@ def mission_config_server(input, output, session):
     def card_same():
         selected = input.mission_mode() == "same"
         card_class = "option-card selected" if selected else "option-card collapsed"
- 
+
         header = ui.div(
             {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_same')}', Math.random())"},
             ui.tags.i(class_="fa-solid fa-sliders"),
             "Same mission for all floats",
         )
- 
+
         if not selected:
             return ui.div({"class": card_class}, header)
- 
+
         return ui.div(
             {"class": card_class},
             header,
             ui.div(
                 {"class": "mission-grid"},
-                ui.div(ui.input_numeric(id="cycle_duration", label=ui.span("Cycle length (hours)", style="font-size: 0.90rem;"), value=240, update_on='blur')),
-                ui.div(ui.input_numeric(id="parking_depth", label=ui.span("Drifting depth (m)", style="font-size: 0.90rem;"), value=1000, update_on='blur')),
-                ui.div(ui.input_numeric(id="profile_depth", label=ui.span("Max. profile depth (m)", style="font-size: 0.90rem;"), value=2000, update_on='blur')),
-                ui.div(ui.input_numeric(id="lifespan", label=ui.span("Life expectancy (cycles)", style="font-size: 0.90rem;"), value=500, update_on='blur')),
+                ui.div(
+                    ui.input_numeric(
+                        id="cycle_duration",
+                        label=ui.span("Cycle length (hours)", style="font-size: 0.90rem;"),
+                        value=240,
+                        update_on="blur",
+                    )
+                ),
+                ui.div(
+                    ui.input_numeric(
+                        id="parking_depth",
+                        label=ui.span("Drifting depth (m)", style="font-size: 0.90rem;"),
+                        value=1000,
+                        update_on="blur",
+                    )
+                ),
+                ui.div(
+                    ui.input_numeric(
+                        id="profile_depth",
+                        label=ui.span("Max. profile depth (m)", style="font-size: 0.90rem;"),
+                        value=2000,
+                        update_on="blur",
+                    )
+                ),
+                ui.div(
+                    ui.input_numeric(
+                        id="lifespan",
+                        label=ui.span("Life expectancy (cycles)", style="font-size: 0.90rem;"),
+                        value=500,
+                        update_on="blur",
+                    )
+                ),
                 ui.div(
                     {"class": "full-row"},
-                    ui.input_numeric(id="vertical_speed", label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"), value=0.09, update_on='blur'),
+                    ui.input_numeric(
+                        id="vertical_speed",
+                        label=ui.span("Vertical speed (m/s)", style="font-size: 0.90rem;"),
+                        value=0.09,
+                        update_on="blur",
+                    ),
                 ),
             ),
             ui.input_action_button(
-                id="validate_mission_same", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate mission'),
+                id="validate_mission_same",
+                label=ui.HTML('<i class="fa-solid fa-check"></i> Validate mission'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
             ),
         )
@@ -98,22 +134,26 @@ def mission_config_server(input, output, session):
     def card_different():
         selected = input.mission_mode() == "different"
         card_class = "option-card selected" if selected else "option-card collapsed"
- 
+
         header = ui.div(
-            {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_different')}', Math.random())"},
+            {
+                "class": "option-header",
+                "onclick": f"Shiny.setInputValue('{session.ns('pick_different')}', Math.random())",
+            },
             ui.tags.i(class_="fa-solid fa-file-upload"),
             "Different mission per float",
         )
- 
+
         if not selected:
             return ui.div({"class": card_class}, header)
- 
+
         return ui.div(
             {"class": card_class},
             header,
             ui.input_file(id="mission_config_file", label="", accept=[".json"]),
             ui.input_action_button(
-                id="validate_mission_different", label=ui.HTML('<i class="fa-solid fa-check"></i> Validate mission'),
+                id="validate_mission_different",
+                label=ui.HTML('<i class="fa-solid fa-check"></i> Validate mission'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
             ),
         )

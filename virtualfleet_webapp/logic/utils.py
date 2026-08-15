@@ -1,8 +1,10 @@
-from shiny import ui
-from datetime import datetime, timezone
-import numpy as np
-import os
 import json
+from datetime import UTC, datetime
+from pathlib import Path
+
+import numpy as np
+from shiny import ui
+
 
 # Generic functions
 def section_title(number, text, tooltip=None):
@@ -20,12 +22,14 @@ def section_title(number, text, tooltip=None):
         return ui.tooltip(heading, tooltip, placement="right")
     return heading
 
+
 def check_nc_file(value):
     if not value.lower().endswith(".nc"):
         return "File should be a NetCDF file (ends with .nc)"
-    if not os.path.exists(value):
+    if not Path(value).exists():
         return "File not found at this path"
     return None
+
 
 # Speed field
 def check_config_file(value):
@@ -38,11 +42,11 @@ def check_config_file(value):
         }
     """
     if not value:
-        #return "A config file is required"
+        # return "A config file is required"
         return None
-        
+
     try:
-        with open(value[0]["datapath"], "r") as f:
+        with Path(value[0]["datapath"]).open() as f:
             config = json.load(f)
     except Exception:
         return "File could not be read"
@@ -68,13 +72,11 @@ def check_config_file(value):
 
     return None
 
-def read_config_file(config_file):
-    """Read a variable mapping configuration file. All checks are done in check_config_file.
-    """
-    with open(config_file, "r") as f:
-        configs = json.load(f)
 
-    return configs
+def read_config_file(config_file):
+    """Read a variable mapping configuration file. All checks are done in check_config_file."""
+    with Path(config_file).open() as f:
+        return json.load(f)
 
 
 # Deployment plan module
@@ -83,10 +85,11 @@ def interpolate_along_line(coords, n):
     (lon1, lat1), (lon2, lat2) = coords
     lons = np.linspace(lon1, lon2, n)
     lats = np.linspace(lat1, lat2, n)
-    return [{"lat": lat, "lon": lon} for lon, lat in zip(lons, lats)]
+    return [{"lat": lat, "lon": lon} for lon, lat in zip(lons, lats, strict=True)]
 
-#from pyproj import Geod
-#def interpolate_along_line_geodesic(coords, n):
+
+# from pyproj import Geod
+# def interpolate_along_line_geodesic(coords, n):
 #    (lon1, lat1), (lon2, lat2) = coords
 #    geod = Geod(ellps="WGS84")
 #    pts = geod.npts(lon1, lat1, lon2, lat2, n - 2)  # excludes endpoints
@@ -108,7 +111,7 @@ def resolve_deployment_points(points, lines, shapes, num_floats):
     if shapes:
         if not num_floats or num_floats < 1:
             raise ValueError("Set 'Number of floats' to at least 1 for a polygon deployment.")
-        return 0 # Needs to be implemented
+        return 0  # Needs to be implemented
     return points
 
 
@@ -126,11 +129,12 @@ def build_geojson(points, start_date):
         ],
     }
 
+
 def read_deployment_plan(filepath):
     """Read a deployment-plan GeoJSON file return it in the columnar format expected by the simulation:
     {'lat': array, 'lon': array, 'time': array}.
     """
-    with open(filepath, "r") as f:
+    with Path(filepath).open() as f:
         geojson = json.load(f)
 
     lats, lons, times = [], [], []
@@ -160,9 +164,10 @@ def build_deployment_plan_geojson(plan):
                 "geometry": {"type": "Point", "coordinates": [float(lon), float(lat)]},
                 "properties": {"timestamp": np.datetime_as_string(t, unit="D")},
             }
-            for lat, lon, t in zip(plan["lat"], plan["lon"], plan["time"])
+            for lat, lon, t in zip(plan["lat"], plan["lon"], plan["time"], strict=True)
         ],
     }
+
 
 # Mission config module
 def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile_depth, vertical_speed, name="default"):
@@ -171,7 +176,7 @@ def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile
     profile_depth, vertical_speed).
     """
     return {
-        "created": datetime.now(timezone.utc).isoformat(),
+        "created": datetime.now(UTC).isoformat(),
         "version": "2.0",
         "name": name,
         "parameters": [
@@ -224,7 +229,7 @@ def read_mission_config(filepath):
     float configuration documents (as produced by build_mission_config), one
     per float, in the same order as the deployment plan.
     """
-    with open(filepath, "r") as f:
+    with Path(filepath).open() as f:
         configs = json.load(f)
 
     if not isinstance(configs, list):

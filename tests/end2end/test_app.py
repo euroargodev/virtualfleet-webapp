@@ -1,7 +1,6 @@
 import re
 
 from playwright.sync_api import Page, expect
-
 from shiny.playwright import controller
 from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
@@ -22,9 +21,7 @@ def notification_text(page: Page):
 def test_speed_field_defaults_are_visible(page: Page, app: ShinyAppProc) -> None:
     page.goto(app.url)
 
-    controller.InputText(page, "speed_field-speed_field_path").expect_value(
-        "./data/cmems_speed_field.nc"
-    )
+    controller.InputText(page, "speed_field-speed_field_path").expect_value("./data/cmems_speed_field.nc")
     controller.InputFile(page, "speed_field-upload_config_file").expect.to_be_visible()
 
 
@@ -68,9 +65,7 @@ def test_validate_plan_without_any_geometry_shows_an_error(page: Page, app: Shin
 
     controller.InputActionButton(page, "deployment_plan-validate_plan_a").click()
 
-    expect(notification_text(page)).to_contain_text(
-        "Place markers, draw a deployment line, or draw a polygon first."
-    )
+    expect(notification_text(page)).to_contain_text("Place markers, draw a deployment line, or draw a polygon first.")
 
 
 def test_validate_plan_b_without_a_file_shows_an_error(page: Page, app: ShinyAppProc) -> None:

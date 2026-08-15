@@ -1,21 +1,33 @@
 import asyncio
-from shiny import ui, module, reactive
-from ipyleaflet import Map, Polyline, ScaleControl, basemaps
-from shinywidgets import output_widget, render_widget
+
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 import numpy as np
 import xarray as xr
+from ipyleaflet import Map, Polyline, ScaleControl, basemaps
+from shiny import module, reactive, ui
+from shinywidgets import output_widget, render_widget
+
 
 @module.ui
 def simulated_traj_ui():
-    return (
-        ui.TagList(
-            ui.input_text(id="simulated_traj_path", label="Path to simulation output", value="./simulations/default.zarr", placeholder="Path to simulation results"),
-            ui.input_task_button(id="read_zarr_file", label=ui.HTML('Read zarr file'), class_="btn-primary", label_busy="Reading...", width="300px"),
-            ui.card(output_widget("map_traj"))
-        )
+    return ui.TagList(
+        ui.input_text(
+            id="simulated_traj_path",
+            label="Path to simulation output",
+            value="./simulations/default.zarr",
+            placeholder="Path to simulation results",
+        ),
+        ui.input_task_button(
+            id="read_zarr_file",
+            label=ui.HTML("Read zarr file"),
+            class_="btn-primary",
+            label_busy="Reading...",
+            width="300px",
+        ),
+        ui.card(output_widget("map_traj")),
     )
+
 
 @module.server
 def simulated_traj_server(input, output, session):
@@ -31,7 +43,7 @@ def simulated_traj_server(input, output, session):
     )
 
     # Add options
-    m.add(ScaleControl(position='bottomleft'))
+    m.add(ScaleControl(position="bottomleft"))
 
     trajectory_layers = []
 
@@ -44,7 +56,7 @@ def simulated_traj_server(input, output, session):
     # Read .zarr file #
     ###################
     def _run_blocking(file):
-        return(xr.open_zarr(file))
+        return xr.open_zarr(file)
 
     @ui.bind_task_button(button_id="read_zarr_file")
     @reactive.extended_task
@@ -93,11 +105,11 @@ def simulated_traj_server(input, output, session):
             colors = ["#2c7fb8"]
 
         all_points = []
-        for color, lat_row, lon_row in zip(colors, lats, lons):
+        for color, lat_row, lon_row in zip(colors, lats, lons, strict=True):
             mask = np.isfinite(lat_row) & np.isfinite(lon_row)
             if not mask.any():
                 continue
-            path = list(zip(lat_row[mask].tolist(), lon_row[mask].tolist()))
+            path = list(zip(lat_row[mask].tolist(), lon_row[mask].tolist(), strict=True))
 
             line = Polyline(locations=path, color=color, weight=2, fill=False)
             m.add(line)

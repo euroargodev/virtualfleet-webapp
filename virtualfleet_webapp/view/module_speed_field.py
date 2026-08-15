@@ -1,20 +1,25 @@
 import asyncio
 
-from shiny import ui, module, reactive
+from shiny import module, reactive, ui
 from shiny_validate import InputValidator
-from virtualfleet_webapp.logic.utils import section_title, check_config_file, check_nc_file, read_config_file
 from virtualargofleet import Velocity
+
+from virtualfleet_webapp.logic.utils import check_config_file, check_nc_file, read_config_file, section_title
+
 
 @module.ui
 def speed_field_ui():
     return ui.TagList(
         section_title(
-            1, "Speed Field",
+            1,
+            "Speed Field",
             tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
         ),
-        ui.input_text(id="speed_field_path", label="", value="./data/cmems_speed_field.nc", placeholder="Path to speed field"),
+        ui.input_text(
+            id="speed_field_path", label="", value="./data/cmems_speed_field.nc", placeholder="Path to speed field"
+        ),
         ui.input_file(id="upload_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
-        ui.hr({"class": "section-divider"})
+        ui.hr({"class": "section-divider"}),
     )
 
 
@@ -42,7 +47,7 @@ def speed_field_server(input, output, session):
 
     def _build_velocity_field(path, mapping):
         return Velocity(
-            model='custom',
+            model="custom",
             src={"U": path, "V": path},
             variables=mapping["variables"],
             dimensions=mapping["dimensions"],

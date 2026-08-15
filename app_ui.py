@@ -4,12 +4,13 @@ Application User Interface
 
 from shiny import ui
 
+from virtualfleet_webapp.view.module_deployment_plan import deployment_plan_map_ui, deployment_plan_ui
+from virtualfleet_webapp.view.module_mission import mission_config_ui
+from virtualfleet_webapp.view.module_simulated_traj import simulated_traj_ui
+from virtualfleet_webapp.view.module_simulation import simulation_ui
+
 # import custom modules
 from virtualfleet_webapp.view.module_speed_field import speed_field_ui
-from virtualfleet_webapp.view.module_deployment_plan import deployment_plan_ui, deployment_plan_map_ui
-from virtualfleet_webapp.view.module_mission import mission_config_ui
-from virtualfleet_webapp.view.module_simulation import simulation_ui
-from virtualfleet_webapp.view.module_simulated_traj import simulated_traj_ui
 
 app_ui = ui.page_fluid(
     # Style
@@ -23,7 +24,7 @@ app_ui = ui.page_fluid(
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css",
         ),
         ui.tags.link(rel="stylesheet", href="styles.css"),
-        #ui.tags.style(custom_css),
+        # ui.tags.style(custom_css),
     ),
     # Busy indicator
     ui.busy_indicators.use(),
@@ -63,7 +64,7 @@ app_ui = ui.page_fluid(
             # Sidebar layout options
             bg="",
             width=400,
-            gap=10 # Vertical spacing in the sidebar
+            gap=10,  # Vertical spacing in the sidebar
         ),
         # Main panel content
         ui.navset_card_underline(
@@ -105,7 +106,10 @@ app_ui = ui.page_fluid(
                     style="font-weight: 700;",
                 ),
             ),
-            style="display: flex; align-items: center; justify-content: space-between; padding: 15px; font-size: 0.85rem; color: var(--bs-secondary-color);",
+            style=(
+                "display: flex; align-items: center; justify-content: space-between; "
+                "padding: 15px; font-size: 0.85rem; color: var(--bs-secondary-color);"
+            ),
         ),
         style="border-top: 1px solid var(--bs-secondary-colour); margin-top: 20px;",
     ),

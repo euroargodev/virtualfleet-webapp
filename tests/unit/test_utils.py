@@ -99,7 +99,7 @@ class TestInterpolateAlongLine:
 
 class TestResolveDeploymentPoints:
     def test_raises_when_nothing_drawn(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Place markers"):
             resolve_deployment_points([], [], [], num_floats=5)
 
     def test_points_only_returns_points_unchanged(self):
@@ -109,7 +109,7 @@ class TestResolveDeploymentPoints:
 
     def test_line_requires_at_least_two_floats(self):
         line = [(0.0, 0.0), (1.0, 0.0)]
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="at least 2 for a line deployment"):
             resolve_deployment_points([], [line], [], num_floats=1)
 
     def test_line_interpolates_requested_number_of_floats(self):
@@ -124,7 +124,7 @@ class TestResolveDeploymentPoints:
         assert result == interpolate_along_line(first, 2)
 
     def test_shape_requires_at_least_one_float(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="at least 1 for a polygon deployment"):
             resolve_deployment_points([], [], [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0)]], num_floats=0)
 
     def test_shape_deployment_is_not_implemented_yet(self):
@@ -240,15 +240,22 @@ class TestBuildMissionConfig:
 
     def test_uses_the_given_name(self):
         config = build_mission_config(
-            cycle_duration=240, life_expectancy=200, parking_depth=1000,
-            profile_depth=2000, vertical_speed=0.09, name="float_0",
+            cycle_duration=240,
+            life_expectancy=200,
+            parking_depth=1000,
+            profile_depth=2000,
+            vertical_speed=0.09,
+            name="float_0",
         )
         assert config["name"] == "float_0"
 
     def test_parameter_values_and_types(self):
         config = build_mission_config(
-            cycle_duration=240, life_expectancy=200, parking_depth=1000,
-            profile_depth=2000, vertical_speed=0.09,
+            cycle_duration=240,
+            life_expectancy=200,
+            parking_depth=1000,
+            profile_depth=2000,
+            vertical_speed=0.09,
         )
         values = {p["name"]: p["value"] for p in config["parameters"]}
 
@@ -264,8 +271,12 @@ class TestReadMissionConfig:
     def test_reads_a_list_of_configs(self, tmp_path):
         configs = [
             build_mission_config(
-                cycle_duration=240, life_expectancy=200, parking_depth=depth,
-                profile_depth=2000, vertical_speed=0.09, name=f"float_{i}",
+                cycle_duration=240,
+                life_expectancy=200,
+                parking_depth=depth,
+                profile_depth=2000,
+                vertical_speed=0.09,
+                name=f"float_{i}",
             )
             for i, depth in enumerate([100, 200, 500])
         ]
@@ -280,15 +291,18 @@ class TestReadMissionConfig:
         path = tmp_path / "mission.json"
         path.write_text(json.dumps({"not": "a list"}))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="must contain a JSON array"):
             read_mission_config(str(path))
 
 
 class TestFlattenMissionConfig:
     def test_flattens_a_single_config_document(self):
         config = build_mission_config(
-            cycle_duration=240, life_expectancy=200, parking_depth=1000,
-            profile_depth=2000, vertical_speed=0.09,
+            cycle_duration=240,
+            life_expectancy=200,
+            parking_depth=1000,
+            profile_depth=2000,
+            vertical_speed=0.09,
         )
 
         flat = flatten_mission_config(config)
@@ -304,8 +318,12 @@ class TestFlattenMissionConfig:
     def test_flattens_a_list_of_config_documents(self):
         configs = [
             build_mission_config(
-                cycle_duration=240, life_expectancy=200, parking_depth=depth,
-                profile_depth=2000, vertical_speed=0.09, name=f"float_{i}",
+                cycle_duration=240,
+                life_expectancy=200,
+                parking_depth=depth,
+                profile_depth=2000,
+                vertical_speed=0.09,
+                name=f"float_{i}",
             )
             for i, depth in enumerate([100, 200, 500])
         ]

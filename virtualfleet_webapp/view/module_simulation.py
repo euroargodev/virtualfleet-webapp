@@ -4,8 +4,9 @@ import io
 import json
 import os
 import zipfile
+from pathlib import Path
 
-from shiny import ui, module, reactive, render
+from shiny import module, reactive, render, ui
 from shiny_validate import InputValidator
 from tqdm import tqdm as _tqdm_cls
 from virtualargofleet import VirtualFleet
@@ -44,12 +45,45 @@ def simulation_ui():
         section_title(4, "Simulation Parameters", tooltip="TBD"),
         ui.div(
             {"class": "mission-grid"},
-            ui.div(ui.input_numeric(id="simulation_time", label=ui.span("Simulation length (days)", style="font-size: 0.90rem;"), value=1, update_on='blur')),
-            ui.div(ui.input_numeric(id="time_step", label=ui.span("Time step (minutes)", style="font-size: 0.90rem;"), value=5, update_on='blur')),
-            ui.div(ui.input_numeric(id="writing_step", label=ui.span("Writing time step (hours)", style="font-size: 0.90rem;"), value=1, update_on='blur')),
-            ui.div(ui.input_text(id="simulation_name", label=ui.span("Simulation name", style="font-size: 0.90rem;"), value="default", update_on='blur')),
+            ui.div(
+                ui.input_numeric(
+                    id="simulation_time",
+                    label=ui.span("Simulation length (days)", style="font-size: 0.90rem;"),
+                    value=1,
+                    update_on="blur",
+                )
+            ),
+            ui.div(
+                ui.input_numeric(
+                    id="time_step",
+                    label=ui.span("Time step (minutes)", style="font-size: 0.90rem;"),
+                    value=5,
+                    update_on="blur",
+                )
+            ),
+            ui.div(
+                ui.input_numeric(
+                    id="writing_step",
+                    label=ui.span("Writing time step (hours)", style="font-size: 0.90rem;"),
+                    value=1,
+                    update_on="blur",
+                )
+            ),
+            ui.div(
+                ui.input_text(
+                    id="simulation_name",
+                    label=ui.span("Simulation name", style="font-size: 0.90rem;"),
+                    value="default",
+                    update_on="blur",
+                )
+            ),
         ),
-        ui.input_task_button(id="run_simulation", label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'), class_="btn-primary", label_busy="Running..."),
+        ui.input_task_button(
+            id="run_simulation",
+            label=ui.HTML('<i class="fa-solid fa-play"></i> Run Simulation'),
+            class_="btn-primary",
+            label_busy="Running...",
+        ),
         ui.output_ui("simulation_progress"),
         ui.output_ui("save_simulation_slot"),
     )
@@ -69,7 +103,14 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
 
     def _run_blocking(plan, fieldset, mission, duration, step, record, output_file):
         vfleet = VirtualFleet(plan=plan, fieldset=fieldset, mission=mission)
-        vfleet.simulate(duration=duration, step=step, record=record, output=True, output_file=output_file, output_folder=SIMULATIONS_FOLDER)
+        vfleet.simulate(
+            duration=duration,
+            step=step,
+            record=record,
+            output=True,
+            output_file=output_file,
+            output_folder=SIMULATIONS_FOLDER,
+        )
         return vfleet
 
     @ui.bind_task_button(button_id="run_simulation")
@@ -135,7 +176,7 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             input.simulation_time(),
             input.time_step(),
             input.writing_step(),
-            input.simulation_name()
+            input.simulation_name(),
         )
 
     # The actual download link only exists in the DOM once a run has
@@ -150,7 +191,9 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
                 class_="btn-light",
                 disabled=True,
             )
-        return ui.download_button(id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light")
+        return ui.download_button(
+            id="save_simulation", label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'), class_="btn-light"
+        )
 
     @render.download_button(filename=lambda: f"{input.simulation_name()}.zip")
     def save_simulation():
@@ -160,8 +203,8 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
 
         name = input.simulation_name()
         zarr_name = name if name.endswith(".zarr") else f"{name}.zarr"
-        zarr_path = os.path.join(SIMULATIONS_FOLDER, zarr_name)
-        if not os.path.isdir(zarr_path):
+        zarr_path = Path(SIMULATIONS_FOLDER) / zarr_name
+        if not zarr_path.is_dir():
             ui.notification_show(f"Could not find simulation output at {zarr_path}.", type="error")
             raise Exception(f"Missing zarr output: {zarr_path}")
 
@@ -170,8 +213,8 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             # Simulation output (zarr store is a directory of many small files).
             for root, _dirs, files in os.walk(zarr_path):
                 for fname in files:
-                    full_path = os.path.join(root, fname)
-                    arcname = os.path.join(zarr_name, os.path.relpath(full_path, zarr_path))
+                    full_path = Path(root) / fname
+                    arcname = Path(zarr_name) / full_path.relative_to(zarr_path)
                     zf.write(full_path, arcname)
 
             # Deployment plan, as GeoJSON.
