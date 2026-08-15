@@ -1,5 +1,11 @@
 from shiny import ui, module, reactive, render
-from virtualfleet_webapp.logic.utils import section_title, build_mission_config, read_mission_config
+from shiny_validate import InputValidator
+from virtualfleet_webapp.logic.utils import (
+    section_title, 
+    build_mission_config, 
+    check_positive_number, 
+    read_mission_config
+)
 
 @module.ui
 def mission_config_ui():
@@ -27,6 +33,22 @@ def mission_config_server(input, output, session):
     mission_config = reactive.Value(None)          # "same": built from the mission inputs
     uploaded_mission_config = reactive.Value(None) # "different": parsed from an uploaded file
     last_validated_mission_option = reactive.Value(None)  # "same" or "different"
+
+    def check_parking_shallower_than_profile(value):
+        """Validate that profile depth is strictly greater than drifting depth."""
+        profile = input.profile_depth()
+        if value is not None and profile is not None and value >= profile:
+            return "Drifting depth must be less than max. profile depth"
+        return None
+
+    iv = InputValidator()
+    iv.add_rule("cycle_duration", check_positive_number)
+    iv.add_rule("parking_depth", check_positive_number)
+    iv.add_rule("parking_depth", check_parking_shallower_than_profile)
+    iv.add_rule("profile_depth", check_positive_number)
+    iv.add_rule("lifespan", check_positive_number)
+    iv.add_rule("vertical_speed", check_positive_number)
+    iv.enable()
 
     @reactive.effect
     @reactive.event(input.pick_same)
@@ -112,6 +134,9 @@ def mission_config_server(input, output, session):
     @reactive.effect
     @reactive.event(input.validate_mission_same)
     def _():
+        if not iv.is_valid():
+            ui.notification_show("Fix the highlighted mission parameters first.", type="error")
+            return
         config = build_mission_config(
             cycle_duration=input.cycle_duration(),
             life_expectancy=input.lifespan(),

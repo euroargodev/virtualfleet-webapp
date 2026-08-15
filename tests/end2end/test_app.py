@@ -107,7 +107,7 @@ def test_validate_mission_different_without_a_file_shows_an_error(page: Page, ap
 def test_simulation_parameters_defaults_are_visible(page: Page, app: ShinyAppProc) -> None:
     page.goto(app.url)
 
-    controller.InputNumeric(page, "simulation-simulation_time").expect_value("0")
+    controller.InputNumeric(page, "simulation-simulation_time").expect_value("1")
     controller.InputNumeric(page, "simulation-time_step").expect_value("5")
     controller.InputNumeric(page, "simulation-writing_step").expect_value("1")
     controller.InputText(page, "simulation-simulation_name").expect_value("default")

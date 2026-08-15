@@ -6,10 +6,16 @@ import os
 import zipfile
 
 from shiny import ui, module, reactive, render
+from shiny_validate import InputValidator
 from tqdm import tqdm as _tqdm_cls
 from virtualargofleet import VirtualFleet
 
-from virtualfleet_webapp.logic.utils import build_deployment_plan_geojson, flatten_mission_config, section_title
+from virtualfleet_webapp.logic.utils import (
+    build_deployment_plan_geojson,
+    check_positive_number,
+    flatten_mission_config,
+    section_title,
+)
 
 SIMULATIONS_FOLDER = "./simulations/"
 
@@ -38,7 +44,7 @@ def simulation_ui():
         section_title(4, "Simulation Parameters", tooltip="TBD"),
         ui.div(
             {"class": "mission-grid"},
-            ui.div(ui.input_numeric(id="simulation_time", label=ui.span("Simulation length (days)", style="font-size: 0.90rem;"), value=0, update_on='blur')),
+            ui.div(ui.input_numeric(id="simulation_time", label=ui.span("Simulation length (days)", style="font-size: 0.90rem;"), value=1, update_on='blur')),
             ui.div(ui.input_numeric(id="time_step", label=ui.span("Time step (minutes)", style="font-size: 0.90rem;"), value=5, update_on='blur')),
             ui.div(ui.input_numeric(id="writing_step", label=ui.span("Writing time step (hours)", style="font-size: 0.90rem;"), value=1, update_on='blur')),
             ui.div(ui.input_text(id="simulation_name", label=ui.span("Simulation name", style="font-size: 0.90rem;"), value="default", update_on='blur')),
@@ -54,6 +60,12 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
 
     # One mutable [n, total] slot per session, reused across runs.
     progress_slot = [0, None]
+
+    iv = InputValidator()
+    iv.add_rule("simulation_time", check_positive_number)
+    iv.add_rule("time_step", check_positive_number)
+    iv.add_rule("writing_step", check_positive_number)
+    iv.enable()
 
     def _run_blocking(plan, fieldset, mission, duration, step, record, output_file):
         vfleet = VirtualFleet(plan=plan, fieldset=fieldset, mission=mission)
@@ -112,6 +124,9 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
         if not config:
             ui.notification_show("Validate a mission configuration first.", type="error")
             return
+        if not iv.is_valid():
+            ui.notification_show("Fix the highlighted simulation parameters first.", type="error")
+            return
 
         run_simulation(
             plan,
@@ -131,7 +146,7 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
         if run_simulation.status() != "success":
             return ui.input_action_button(
                 id="save_simulation_disabled",
-                label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation'),
+                label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation (.zip)'),
                 class_="btn-light",
                 disabled=True,
             )

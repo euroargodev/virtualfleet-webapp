@@ -1,3 +1,5 @@
+import asyncio
+
 from shiny import ui, module, reactive
 from shiny_validate import InputValidator
 from virtualfleet_webapp.logic.utils import section_title, check_config_file, check_nc_file, read_config_file
@@ -38,18 +40,43 @@ def speed_field_server(input, output, session):
             return
         var_mapping.set(config)
 
-    @reactive.calc
-    def velocity_field():
+    def _build_velocity_field(path, mapping):
+        return Velocity(
+            model='custom',
+            src={"U": path, "V": path},
+            variables=mapping["variables"],
+            dimensions=mapping["dimensions"],
+        )
+
+    # Opening/indexing the velocity NetCDF file(s) can take a while (large or
+    # remote files) and must not block the single-threaded reactive flush
+    # shared by every connected session, so it's run in a worker thread.
+    @reactive.extended_task
+    async def _load_velocity_field(path, mapping):
+        return await asyncio.to_thread(_build_velocity_field, path, mapping)
+
+    @reactive.effect
+    def _():
         mapping = var_mapping()
         if mapping is None:
-            return None
+            return
+        path = input.speed_field_path()
+        if check_nc_file(path) is not None:
+            return
+        _load_velocity_field(path, mapping)
 
-        Velfield = Velocity(
-                    model='custom',
-                    src = {"U": input.speed_field_path(), "V": input.speed_field_path()},
-                    variables=mapping["variables"],
-                    dimensions=mapping["dimensions"],
-                    )
-        return Velfield
+    @reactive.effect
+    def _():
+        if _load_velocity_field.status() == "error":
+            try:
+                _load_velocity_field.result()
+            except Exception as e:
+                ui.notification_show(f"Could not load speed field: {e}", type="error")
+
+    @reactive.calc
+    def velocity_field():
+        if _load_velocity_field.status() != "success":
+            return None
+        return _load_velocity_field.result()
 
     return velocity_field

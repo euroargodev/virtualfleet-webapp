@@ -9,6 +9,7 @@ from virtualfleet_webapp.logic.utils import (
     build_geojson,
     build_mission_config,
     check_config_file,
+    check_positive_number,
     flatten_mission_config,
     interpolate_along_line,
     read_config_file,
@@ -59,6 +60,20 @@ class TestCheckConfigFile:
 
     def test_no_file_uploaded_is_valid(self):
         assert check_config_file(None) is None
+
+
+class TestCheckPositiveNumber:
+    def test_positive_value_passes(self):
+        assert check_positive_number(5) is None
+
+    def test_zero_fails(self):
+        assert check_positive_number(0) is not None
+
+    def test_negative_fails(self):
+        assert check_positive_number(-1) is not None
+
+    def test_none_fails(self):
+        assert check_positive_number(None) is not None
 
 
 class TestReadConfigFile:

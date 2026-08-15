@@ -27,6 +27,7 @@ def check_nc_file(value):
         return "File not found at this path"
     return None
 
+# Speed field
 def check_config_file(value):
     """Validate an uploaded variable mapping config file.
 
@@ -207,6 +208,15 @@ def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile
         ],
         "$schema": "https://raw.githubusercontent.com/euroargodev/VirtualFleet/json-schemas-FloatConfiguration/schemas/VF-ArgoFloat-Configuration.json",
     }
+
+
+def check_positive_number(value):
+    """Validate a numeric input that must be strictly greater than zero."""
+    if value is None:
+        return "A value is required"
+    if value <= 0:
+        return "Must be greater than 0"
+    return None
 
 
 def read_mission_config(filepath):
