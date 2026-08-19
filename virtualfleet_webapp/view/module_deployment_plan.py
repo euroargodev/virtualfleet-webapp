@@ -218,6 +218,7 @@ def deployment_plan_server(input, output, session):
         selected = input.deploy_option() == "B"
         card_class = "option-card selected" if selected else "option-card collapsed"
 
+        # Header made with the help of AI (Claude Sonnet 5)
         header = ui.div(
             {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_b')}', Math.random())"},
             ui.tags.i(class_="fa-solid fa-file-upload"),

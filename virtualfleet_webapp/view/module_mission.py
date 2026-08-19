@@ -67,6 +67,7 @@ def mission_config_server(input, output, session):
         selected = input.mission_mode() == "same"
         card_class = "option-card selected" if selected else "option-card collapsed"
 
+        # Header made with the help of AI (Claude Sonnet 5)
         header = ui.div(
             {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_same')}', Math.random())"},
             ui.tags.i(class_="fa-solid fa-sliders"),
@@ -135,6 +136,7 @@ def mission_config_server(input, output, session):
         selected = input.mission_mode() == "different"
         card_class = "option-card selected" if selected else "option-card collapsed"
 
+        # Header made with the help of AI (Claude Sonnet 5)
         header = ui.div(
             {
                 "class": "option-header",
@@ -157,19 +159,6 @@ def mission_config_server(input, output, session):
                 style="width: 100%; background: var(--bs-primary); color: white; border: none; margin-top: 8px;",
             ),
         )
-
-    # Reflects whichever mission source was last validated, regardless of
-    # which card is currently displayed in the sidebar.
-    @reactive.calc
-    def last_validated_mission_config():
-        option = last_validated_mission_option()
-
-        if option == "same":
-            return mission_config()
-        if option == "different":
-            return uploaded_mission_config()
-
-        return None
 
     @reactive.effect
     @reactive.event(input.validate_mission_same)
@@ -203,5 +192,18 @@ def mission_config_server(input, output, session):
         uploaded_mission_config.set(configs)
         last_validated_mission_option.set("different")
         ui.notification_show("Mission OK", type="message")
+
+    # Reactive value needed to be returned to the simulation module
+    # based on the last validated mission.
+    @reactive.calc
+    def last_validated_mission_config():
+        option = last_validated_mission_option()
+
+        if option == "same":
+            return mission_config()
+        if option == "different":
+            return uploaded_mission_config()
+
+        return None
 
     return last_validated_mission_config

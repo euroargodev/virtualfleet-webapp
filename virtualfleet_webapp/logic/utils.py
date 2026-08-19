@@ -25,9 +25,9 @@ def section_title(number, text, tooltip=None):
 
 def check_nc_file(value):
     if not value.endswith(".nc"):
-        return "File should be a NetCDF file"
+        return "File should be a NetCDF file."
     if not Path(value).exists():
-        return "File not found at this path"
+        return "File not found at this path."
     return None
 
 
@@ -104,7 +104,7 @@ def resolve_deployment_points(points, lines, shapes, num_floats):
         return interpolate_along_line(lines[0], num_floats)
     if shapes:
         if not num_floats or num_floats < 1:
-            raise ValueError("Set 'Number of floats' to at least 1 for a polygon deployment.")
+            raise ValueError("Set 'Number of floats' to at least 1 for XXX TBD.")
         return 0  # Needs to be implemented
     return points
 
@@ -169,7 +169,7 @@ def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile
     return {
         "created": datetime.now(UTC).isoformat(),
         "version": "2.0",
-        "name": "default",
+        "name": "default", # Should I change that to something not default? Like a specific name?
         "parameters": [
             {
                 "name": "cycle_duration",
@@ -209,16 +209,16 @@ def build_mission_config(cycle_duration, life_expectancy, parking_depth, profile
 def check_positive_number(value):
     """Validate a numeric input that must be strictly greater than zero."""
     if value is None:
-        return "A value is required"
+        return "A value is required."
     if value <= 0:
-        return "Must be greater than 0"
+        return "Must be greater than 0."
     return None
 
 
 def read_mission_config(filepath):
     """Read a "different mission per float" file: a JSON array of VirtualFleet
     float configuration documents (as produced by build_mission_config), one
-    per float, in the same order as the deployment plan.
+    per float.
     """
     with Path(filepath).open() as f:
         configs = json.load(f)
@@ -229,11 +229,15 @@ def read_mission_config(filepath):
     return configs
 
 
+def _flatten_single_mission_config(config):
+    """Flatten a single mission configuration into a flat parameter dict."""
+    return {p["name"]: p["value"] for p in config["parameters"]}
+
+
 def flatten_mission_config(config):
-    """Flatten one or more VF-ArgoFloat-Configuration documents (as produced by
-    build_mission_config / read_mission_config) into the flat parameter dicts
+    """Flatten one or more mission configurations into flat parameter dicts
     expected by VirtualFleet's `mission` argument.
     """
     if isinstance(config, list):
-        return [flatten_mission_config(c) for c in config]
-    return {p["name"]: p["value"] for p in config["parameters"]}
+        return [_flatten_single_mission_config(c) for c in config]
+    return _flatten_single_mission_config(config)
