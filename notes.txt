@@ -20,6 +20,8 @@ Mac/Linux, no issue but needs to be tested on Windows unfortunately
 
 Tester sur HPC (more poweeeeer) -> need SSH tunnel for localhost app
 
+- Prendre en comptes mes 1st feedback de Kevin et Guillaume (cfr. mails)
+
 Don't forget
 - Run ruff on repo regularly
 - CI (to be done)

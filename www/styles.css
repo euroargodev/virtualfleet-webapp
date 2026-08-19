@@ -1,4 +1,4 @@
-/* DISCLAIMER, this CSS code was mostly written by Generative AI (namely by Claude code v2.1.235, model Sonnet 5 */
+/* DISCLAIMER - This CSS code was mostly written by Generative AI (namely by Claude code v2.1.235, model Sonnet 5 */
 
 /* Buttons styles */
 .btn {
@@ -28,8 +28,8 @@
     border: 2px solid var(--bs-primary);
 }
 .option-card.collapsed {
-    border: 1px solid var(--bs-border-color, #D8D8D8);
-    color: var(--bs-secondary-color, #6B6B6B);
+    border: 1px solid #D8D8D8; /* Not in the _brand.yaml file, fix it manually */
+    color: #6B6B6B; /* not in the _brand.yaml file, fix it manually */
     padding: 12px;
 }
 .option-header {
@@ -44,12 +44,12 @@
 .option-card.collapsed .option-header {
     margin-bottom: 0;
     font-weight: 400;
-    color: var(--bs-secondary-color, #6B6B6B);
+    color: #6B6B6B; ./* not in the _brand.yaml file, fix it manually */
 }
 .option-card.selected .option-header {
     color: var(--bs-primary);
 }
-/* hide the default radio buttons, we drive selection via the card click */
+/* hide the default radio buttons */
 .option-radio .shiny-input-radiogroup {
     display: none;
 }
