@@ -1,7 +1,7 @@
 [project]
 name = "virtualfleet-webapp"
 version = "0.1.0"
-description = "Add your description here"
+description = "Webapp for https://github.com/euroargodev/VirtualFleet. A user-friendly way to make and analyse simulations of virtual Argo float trajectories."
 readme = "README.md"
 authors = [
     { name = "fricour", email = "florian@fricour.com" }

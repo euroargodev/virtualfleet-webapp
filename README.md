@@ -1,0 +1,1 @@
+- clone the repo and ´uv sync` then `uv run shiny run app.py --reload --launch-browser`
