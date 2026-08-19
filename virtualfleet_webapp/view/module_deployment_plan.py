@@ -48,7 +48,7 @@ def deployment_plan_map_ui():
 def deployment_plan_server(input, output, session):
 
     # Reactive state for the deployment plan
-    deployment_points = reactive.Value([])  # Option A: drawn/placed on the map
+    deployment_points = reactive.Value([])  # Option A: drawn on the map
     uploaded_plan = reactive.Value(None)  # Option B: parsed from an uploaded file
     last_validated_option = reactive.Value(None)  # "A" or "B", whichever was last validated
 
@@ -89,7 +89,7 @@ def deployment_plan_server(input, output, session):
     def add_or_remove(store, action, value):
         current = store()
         if action == "create":
-            store.set([*current, value])
+            store.set(*current, [value]) # avoid mutation (like .append(), which will not trigger the reactive graph)
         elif action == "remove" and value in current:
             current = (
                 current.copy()
@@ -105,15 +105,14 @@ def deployment_plan_server(input, output, session):
             geom = feature["geometry"]
             geom_type = geom["type"]
 
-            # Only one deployment mode (markers / line / polygon) can be active at a time.
+            # Only one deployment mode (markers/line/polygon) can be active at a time.
             if geom_type == "Point":
                 if action == "create" and (line_markers() or shape_markers()):
                     ui.notification_show(
-                        "Can't mix single markers with an existing line/polygon — clear it first.",
+                        "Can't mix single markers with an existing line/rectangle — clear it first.",
                         type="error",
                     )
                     dc.clear_markers()
-                    dc.clear_circle_markers()
                     continue
                 lon, lat = geom["coordinates"]
                 add_or_remove(point_markers, action, {"lat": lat, "lon": lon})
@@ -121,7 +120,7 @@ def deployment_plan_server(input, output, session):
             elif geom_type == "LineString":
                 if action == "create" and (point_markers() or shape_markers()):
                     ui.notification_show(
-                        "Can't mix a deployment line with existing markers/polygon — clear it first.",
+                        "Can't mix a deployment line with existing markers/rectangle — clear it first.",
                         type="error",
                     )
                     dc.clear_polylines()
@@ -136,27 +135,33 @@ def deployment_plan_server(input, output, session):
                     continue
                 add_or_remove(line_markers, action, geom["coordinates"])
 
-            elif geom_type in ("Polygon", "MultiPolygon"):
+            elif geom_type in ("Polygon"):
+                print(geom_type)
+                print(len(geom["coordinates"]))
                 if action == "create" and (point_markers() or line_markers()):
                     ui.notification_show(
-                        "Can't mix a polygon with existing markers/line — clear it first.",
+                        "Can't mix a rectangle with existing markers/line — clear it first.",
                         type="error",
                     )
                     dc.clear_polygons()
-                    dc.clear_rectangles()
+                    continue
+                if action == "create" and len(geom["coordinates"]) > 1:
+                    ui.notification_show(
+                        "Can't have more than one rectangle.",
+                        type="error",
+                    )
+                    dc.clear_polygons()
                     continue
                 # TODO
-                add_or_remove(shape_markers, action, geom["coordinates"])
+                #add_or_remove(shape_markers, action, geom["coordinates"])
 
     dc.on_draw(handle_draw)
     m.add(dc)
 
     def clear_all_layers():
         dc.clear_markers()
-        dc.clear_circle_markers()
         dc.clear_polylines()
         dc.clear_polygons()
-        dc.clear_rectangles()
 
     @output
     @render_widget
@@ -181,6 +186,7 @@ def deployment_plan_server(input, output, session):
         selected = input.deploy_option() == "A"
         card_class = "option-card selected" if selected else "option-card collapsed"
 
+        # Header made with the help of AI (Claude Sonnet 5)
         header = ui.div(
             {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_a')}', Math.random())"},
             ui.tags.i(class_="fa-solid fa-map"),
@@ -232,34 +238,12 @@ def deployment_plan_server(input, output, session):
             ),
         )
 
-    # Reflects whichever option was last validated, regardless of which
-    # card is currently displayed in the sidebar.
-    @reactive.calc
-    def last_validated_plan():
-        option = last_validated_option()
-
-        if option == "B":
-            return uploaded_plan()
-
-        if option == "A":
-            points = deployment_points()
-            start = input.start_date()
-            if not points or not start:
-                return None
-            t = np.datetime64(start)
-            return {
-                "lat": np.array([p["lat"] for p in points]),
-                "lon": np.array([p["lon"] for p in points]),
-                "time": np.array([t] * len(points)),
-            }
-        return None
-
     @reactive.effect
     @reactive.event(input.validate_plan_a)
     def _():
         try:
             points = resolve_deployment_points(point_markers(), line_markers(), shape_markers(), input.num_floats())
-        except ValueError as error:
+        except ValueError as error: # Could have chosen another type of error..
             ui.notification_show(str(error), type="error")
             return
         deployment_points.set(points)
@@ -282,16 +266,38 @@ def deployment_plan_server(input, output, session):
         last_validated_option.set("B")
         ui.notification_show("Plan OK", type="message")
 
-    @render.download_button(filename=lambda: f"deployment_plan_{uuid.uuid4().hex}.geojson")
+    # Reactive value needed to be returned to the simulation module
+    # based on the last validated deployment plan (either option A or B)
+    @reactive.calc
+    def last_validated_plan():
+        option = last_validated_option()
+
+        if option == "B":
+            return uploaded_plan()
+
+        if option == "A":
+            points = deployment_points()
+            start = input.start_date()
+            if not points or not start:
+                return None
+            t = np.datetime64(start)
+            return {
+                "lat": np.array([p["lat"] for p in points]),
+                "lon": np.array([p["lon"] for p in points]),
+                "time": np.array([t] * len(points)),
+            }
+        return None
+
+    @render.download_button(filename=lambda: f"deployment_plan_{uuid.uuid4().hex[:5]}.geojson")
     def export_plan():
         geojson = build_geojson(deployment_points(), input.start_date())
         yield json.dumps(geojson, indent=2)
 
     # "Show current plan" replaces whatever is being drafted on the map with
-    # read-only markers for the validated plan. Switching it off just hides
-    # those markers again — it does not restore the draft that was cleared.
+    # markers for the validated plan. 
     @reactive.effect
     def _():
+        # Need to remove all markers when switching the button on/off
         for marker in preview_markers:
             m.remove(marker)
         preview_markers.clear()

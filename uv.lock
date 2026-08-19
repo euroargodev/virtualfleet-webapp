@@ -3756,7 +3756,6 @@ dependencies = [
     { name = "brand-yml" },
     { name = "ipyleaflet" },
     { name = "matplotlib" },
-    { name = "playwright" },
     { name = "shiny", extra = ["theme"] },
     { name = "shiny-validate" },
     { name = "shinywidgets" },
@@ -3766,6 +3765,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "jupyter" },
+    { name = "playwright" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-playwright" },
@@ -3777,7 +3777,6 @@ requires-dist = [
     { name = "brand-yml", specifier = ">=0.2.0" },
     { name = "ipyleaflet", specifier = ">=0.20.0" },
     { name = "matplotlib", specifier = ">=3.11.1" },
-    { name = "playwright", specifier = ">=1.62.0" },
     { name = "shiny", extras = ["theme"], specifier = ">=1.5.0" },
     { name = "shiny-validate", specifier = ">=0.1.3" },
     { name = "shinywidgets", specifier = ">=0.8.1" },
@@ -3787,6 +3786,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "playwright", specifier = ">=1.62.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-playwright", specifier = ">=0.9.0" },

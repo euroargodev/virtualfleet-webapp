@@ -146,10 +146,7 @@ def read_deployment_plan(filepath):
 
 
 def build_deployment_plan_geojson(plan):
-    """Serialize a validated deployment plan (columnar {'lat', 'lon', 'time'}
-    arrays, as returned by the deployment plan module) into a GeoJSON
-    FeatureCollection, one Point feature per float.
-    """
+    """Create deployment plan in GeoJSON"""
     return {
         "type": "FeatureCollection",
         "features": [
