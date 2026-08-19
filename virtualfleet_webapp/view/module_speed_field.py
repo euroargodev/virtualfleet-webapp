@@ -32,7 +32,7 @@ def speed_field_server(input, output, session):
     iv.add_rule("upload_config_file", check_config_file)
     iv.enable()
 
-    # variable mapping
+    # Variable mapping
     var_mapping = reactive.value(None)
 
     @reactive.effect
@@ -40,12 +40,12 @@ def speed_field_server(input, output, session):
     def _():
         try:
             config = read_config_file(input.upload_config_file()[0]["datapath"])
-        except Exception:
+        except Exception: # Technically, should not happen because of check_config_file() occuring before.
             ui.notification_show("Could not read the config file.", type="error")
             return
         var_mapping.set(config)
 
-    def _build_velocity_field(path, mapping):
+    def _build_velocity_field(path, mapping): # Internal use, should not be used elsewhere
         return Velocity(
             model="custom",
             src={"U": path, "V": path},
@@ -53,9 +53,7 @@ def speed_field_server(input, output, session):
             dimensions=mapping["dimensions"],
         )
 
-    # Opening/indexing the velocity NetCDF file(s) can take a while (large or
-    # remote files) and must not block the single-threaded reactive flush
-    # shared by every connected session, so it's run in a worker thread.
+    # Opening a NetCDF can take a while (e.g. size) so better use an async process (if app deployed on server at some point)   # must not block the single-threaded reactive flush
     @reactive.extended_task
     async def _load_velocity_field(path, mapping):
         return await asyncio.to_thread(_build_velocity_field, path, mapping)
@@ -63,10 +61,10 @@ def speed_field_server(input, output, session):
     @reactive.effect
     def _():
         mapping = var_mapping()
-        if mapping is None:
+        if mapping is None: # Check if mapping exists
             return
         path = input.speed_field_path()
-        if check_nc_file(path) is not None:
+        if check_nc_file(path) is not None: # If NetCDF file is good, we're good to go !
             return
         _load_velocity_field(path, mapping)
 
