@@ -7,7 +7,7 @@ from shiny import ui
 
 
 # Generic functions
-def section_title(number, text, tooltip=None):
+def section_title(number, text, tooltip=None): 
     """Numbered circle badge + header used at the top of each sidebar section."""
     children = [
         ui.span({"class": "section-badge"}, str(number)),
@@ -24,8 +24,8 @@ def section_title(number, text, tooltip=None):
 
 
 def check_nc_file(value):
-    if not value.lower().endswith(".nc"):
-        return "File should be a NetCDF file (ends with .nc)"
+    if not value.endswith(".nc"):
+        return "File should be a NetCDF file"
     if not Path(value).exists():
         return "File not found at this path"
     return None

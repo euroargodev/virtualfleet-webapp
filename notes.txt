@@ -22,6 +22,8 @@ Tester sur HPC (more poweeeeer) -> need SSH tunnel for localhost app
 
 - Prendre en comptes mes 1st feedback de Kevin et Guillaume (cfr. mails)
 
+- Remplir les TBD dans les tooltips
+
 Don't forget
 - Run ruff on repo regularly
 - CI (to be done)
