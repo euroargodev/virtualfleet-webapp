@@ -1,3 +1,4 @@
+# Template from https://github.com/Appsilon/tapyr-template/blob/main/ruff.toml
 target-version = "py311"
 line-length = 120
 
