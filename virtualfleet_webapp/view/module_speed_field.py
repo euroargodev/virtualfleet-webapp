@@ -53,7 +53,8 @@ def speed_field_server(input, output, session):
             dimensions=mapping["dimensions"],
         )
 
-    # Opening a NetCDF can take a while (e.g. size) so better use an async process (if app deployed on server at some point)   # must not block the single-threaded reactive flush
+    # Opening a NetCDF can take a while (e.g. size) so better 
+    # use an async process (if app deployed on server at some point)  
     @reactive.extended_task
     async def _load_velocity_field(path, mapping):
         return await asyncio.to_thread(_build_velocity_field, path, mapping)
