@@ -267,12 +267,11 @@ class TestReadMissionConfig:
                 profile_depth=2000,
                 vertical_speed=0.09
             )
-            for i, depth in enumerate([100, 200, 500])
+            for depth in enumerate([100, 200, 500])
         ]
         path = tmp_path / "mission.json"
         path.write_text(json.dumps(configs))
 
-        result = read_mission_config(str(path))
 
     def test_raises_when_file_is_not_a_json_array(self, tmp_path):
         path = tmp_path / "mission.json"
