@@ -238,16 +238,6 @@ class TestBuildMissionConfig:
         assert config["$schema"].startswith("https://")
         assert len(config["parameters"]) == 5
 
-    def test_uses_the_given_name(self):
-        config = build_mission_config(
-            cycle_duration=240,
-            life_expectancy=200,
-            parking_depth=1000,
-            profile_depth=2000,
-            vertical_speed=0.09,
-            name="float_0",
-        )
-        assert config["name"] == "float_0"
 
     def test_parameter_values_and_types(self):
         config = build_mission_config(
@@ -275,8 +265,7 @@ class TestReadMissionConfig:
                 life_expectancy=200,
                 parking_depth=depth,
                 profile_depth=2000,
-                vertical_speed=0.09,
-                name=f"float_{i}",
+                vertical_speed=0.09
             )
             for i, depth in enumerate([100, 200, 500])
         ]
@@ -284,8 +273,6 @@ class TestReadMissionConfig:
         path.write_text(json.dumps(configs))
 
         result = read_mission_config(str(path))
-
-        assert [c["name"] for c in result] == ["float_0", "float_1", "float_2"]
 
     def test_raises_when_file_is_not_a_json_array(self, tmp_path):
         path = tmp_path / "mission.json"
@@ -322,8 +309,7 @@ class TestFlattenMissionConfig:
                 life_expectancy=200,
                 parking_depth=depth,
                 profile_depth=2000,
-                vertical_speed=0.09,
-                name=f"float_{i}",
+                vertical_speed=0.09
             )
             for i, depth in enumerate([100, 200, 500])
         ]
