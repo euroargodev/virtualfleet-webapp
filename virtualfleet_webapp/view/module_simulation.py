@@ -1,14 +1,14 @@
 import asyncio
-import contextvars
 import io
 import json
+import math
 import os
 import zipfile
+from datetime import timedelta
 from pathlib import Path
 
 from shiny import module, reactive, render, ui
 from shiny_validate import InputValidator
-from tqdm import tqdm as _tqdm_cls
 from virtualargofleet import VirtualFleet
 
 from virtualfleet_webapp.logic.utils import (
@@ -18,25 +18,37 @@ from virtualfleet_webapp.logic.utils import (
     section_title,
 )
 
-SIMULATIONS_FOLDER = "./simulations/"
+SIMULATIONS_FOLDER = "./simulations/"  # Don't want to let the user choses that.
 
-# ContextVar holding a mutable [n, total] progress slot for the current run.
-# asyncio.to_thread copies the calling context into the worker thread, so this
-# "just works" per-session/per-run without any thread-id bookkeeping.
-_current_progress = contextvars.ContextVar("current_progress", default=None)
 
-if not getattr(_tqdm_cls, "_progress_tracking_patched", False):
-    _original_tqdm_update = _tqdm_cls.update
+def _run_simulation_with_progress(vfleet, duration, step, record, output_path, on_progress):
+    """Run VirtualFleet simulation and compute progress."""
 
-    def _tracked_tqdm_update(self, n=1):
-        _original_tqdm_update(self, n)
-        slot = _current_progress.get()
-        if slot is not None:
-            slot[0] = self.n
-            slot[1] = self.total
+    duration = duration if isinstance(duration, timedelta) else timedelta(days=duration)
+    step = step if isinstance(step, timedelta) else timedelta(minutes=step)
+    record = record if isinstance(record, timedelta) else timedelta(hours=record)
 
-    _tqdm_cls.update = _tracked_tqdm_update
-    _tqdm_cls._progress_tracking_patched = True
+    # https://github.com/euroargodev/VirtualFleet/blob/e06944f1289a742991854069a07ba549d10693fd/virtualargofleet/virtualargofleet.py#L242
+    particle_set = vfleet.ParticleSet
+    total_kernels = max(1, math.ceil(duration / record))  # record = writing step, duration = simulation length
+    kernels_done = 0
+
+    def _tick():
+        nonlocal kernels_done  # Needed because kernels_done declared outside the function
+        kernels_done += 1
+        on_progress(min(kernels_done, total_kernels), total_kernels)
+
+    # See https://github.com/Parcels-code/Parcels/blob/v3.1.4/parcels/particleset.py#L987
+    particle_set.execute(
+        pyfunc=vfleet._parcels["kernels"],  # Kernel function to execute.
+        runtime=duration,
+        dt=step,
+        verbose_progress=True,  # Does not hurt to see the progress bar in the terminal.
+        output_file=particle_set.ParticleFile(name=str(output_path), outputdt=record),
+        postIterationCallbacks=[_tick],
+        callbackdt=record,
+    )
+    return vfleet
 
 
 @module.ui
@@ -92,7 +104,7 @@ def simulation_ui():
 @module.server
 def simulation_server(input, output, session, speed_field, deployment_plan, mission_config):
 
-    # One mutable [n, total] slot per session, reused across runs.
+    # Init progress bar values
     progress_slot = [0, None]
 
     iv = InputValidator()
@@ -101,24 +113,21 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
     iv.add_rule("writing_step", check_positive_number)
     iv.enable()
 
-    def _run_blocking(plan, fieldset, mission, duration, step, record, output_file):
+    def _run_simulation(plan, fieldset, mission, duration, step, record, output_file):
         vfleet = VirtualFleet(plan=plan, fieldset=fieldset, mission=mission)
-        vfleet.simulate(
-            duration=duration,
-            step=step,
-            record=record,
-            output=True,
-            output_file=output_file,
-            output_folder=SIMULATIONS_FOLDER,
-        )
+
+        def on_progress(n, total):
+            progress_slot[0], progress_slot[1] = n, total
+
+        output_path = Path(SIMULATIONS_FOLDER) / output_file
+        _run_simulation_with_progress(vfleet, duration, step, record, output_path, on_progress)
         return vfleet
 
     @ui.bind_task_button(button_id="run_simulation")
     @reactive.extended_task
     async def run_simulation(plan, fieldset, mission, duration, step, record, output_file):
-        progress_slot[0], progress_slot[1] = 0, None
-        _current_progress.set(progress_slot)
-        return await asyncio.to_thread(_run_blocking, plan, fieldset, mission, duration, step, record, output_file)
+        progress_slot[0], progress_slot[1] = 0, None # Needed to avoid a second simulation that starts with 100%
+        return await asyncio.to_thread(_run_simulation, plan, fieldset, mission, duration, step, record, output_file)
 
     @reactive.effect
     def _():
@@ -135,7 +144,7 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
         reactive.invalidate_later(1)
         n, total = progress_slot
         pct = (n / total * 100) if total else 0
-        return ui.div(
+        return ui.div( # Thanks to Claude Sonnet 5 for the CSS
             {"class": "progress", "style": "height: 1.25rem;"},
             ui.div(
                 {
