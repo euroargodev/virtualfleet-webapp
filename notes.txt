@@ -26,6 +26,6 @@ Tester sur HPC (more poweeeeer) -> need SSH tunnel for localhost app
 
 Don't forget
 - Run ruff on repo regularly
-- CI (to be done)
+- Put the default depth to 1 (actually seems to be 0 in the deployment plan)
 - already taken some measures for the deployment of the app on a server with multiple users, namely outsourcing "long" calculations to async threads. Keeping
 that in mind, for saving the results of the simulation (for multiple users), caution must be applied and probably the session.id parameter will be useful..
