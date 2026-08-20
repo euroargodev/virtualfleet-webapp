@@ -188,9 +188,6 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             input.simulation_name(),
         )
 
-    # The actual download link only exists in the DOM once a run has
-    # succeeded — a disabled placeholder button sits there otherwise, so
-    # there's no clickable link that could kick off a broken/empty download.
     @render.ui
     def save_simulation_slot():
         if run_simulation.status() != "success":
@@ -209,22 +206,22 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
         if run_simulation.status() != "success":
             ui.notification_show("Run a simulation successfully before saving.", type="error")
             raise Exception("No completed simulation to save yet.")
+            
 
         name = input.simulation_name()
         zarr_name = name if name.endswith(".zarr") else f"{name}.zarr"
         zarr_path = Path(SIMULATIONS_FOLDER) / zarr_name
-        if not zarr_path.is_dir():
+        if not zarr_path.is_dir(): # zarr is a directory
             ui.notification_show(f"Could not find simulation output at {zarr_path}.", type="error")
             raise Exception(f"Missing zarr output: {zarr_path}")
 
-        buffer = io.BytesIO()
+        buffer = io.BytesIO() # Create archive in memory, not in disk (in a temp file)
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            # Simulation output (zarr store is a directory of many small files).
-            for root, _dirs, files in os.walk(zarr_path):
-                for fname in files:
-                    full_path = Path(root) / fname
-                    arcname = Path(zarr_name) / full_path.relative_to(zarr_path)
-                    zf.write(full_path, arcname)
+            # Simulation output (zarr store is a directory of many files).
+            for full_path in zarr_path.rglob("*"):
+                if full_path.is_file():
+                    archive_name = Path(zarr_name) / full_path.relative_to(zarr_path)
+                    zf.write(full_path, archive_name)
 
             # Deployment plan, as GeoJSON.
             plan = deployment_plan()
@@ -236,12 +233,12 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             if config:
                 zf.writestr("mission_config.json", json.dumps(config, indent=2))
 
-            # Variable mapping, read back off the built velocity field.
+            # Variable mapping.
             fieldset = speed_field()
             if fieldset:
                 mapping = {"variables": fieldset.var, "dimensions": fieldset.dim}
                 zf.writestr("variable_mapping.json", json.dumps(mapping, indent=2))
 
-        yield buffer.getvalue()
+        yield buffer.getvalue() # Write on disk now
 
     return run_simulation
