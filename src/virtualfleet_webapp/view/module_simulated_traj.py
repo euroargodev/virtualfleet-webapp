@@ -102,7 +102,7 @@ def simulated_traj_server(input, output, session):
         colors = [mcolors.to_hex(cmap(i)) for i in range(n_floats)] if cmap else ["#2c7fb8"]
 
         for color, lat_row, lon_row in zip(colors, lats, lons, strict=True):
-            path = list(zip(lat_row.tolist(), lon_row.tolist()))
+            path = list(zip(lat_row.tolist(), lon_row.tolist(), strict=True))
             line = Polyline(locations=path, color=color, weight=2, fill=False)
             m.add(line)
             trajectory_layers.append(line)

@@ -2,7 +2,6 @@ import asyncio
 import io
 import json
 import math
-import os
 import zipfile
 from datetime import timedelta
 from pathlib import Path
