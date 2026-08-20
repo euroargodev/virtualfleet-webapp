@@ -1,4 +1,5 @@
-# DISCLAIMER - Those tests were written by Generative AI (namely by Claude code v2.1.235, model Sonnet 5 and reviewed later on by a human.
+# DISCLAIMER - Those tests were written by Generative AI (namely by Claude code v2.1.235, model Sonnet 5)
+# and reviewed later on by a human.
 import re
 
 from playwright.sync_api import Page, expect
