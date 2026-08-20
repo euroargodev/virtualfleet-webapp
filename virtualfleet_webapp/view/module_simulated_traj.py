@@ -55,13 +55,13 @@ def simulated_traj_server(input, output, session):
     ###################
     # Read .zarr file #
     ###################
-    def _run_blocking(file):
+    def _read_zarr_file(file):
         return xr.open_zarr(file)
 
     @ui.bind_task_button(button_id="read_zarr_file")
     @reactive.extended_task
     async def read_zarr_file(file):
-        return await asyncio.to_thread(_run_blocking, file)
+        return await asyncio.to_thread(_read_zarr_file, file)
 
     @reactive.effect
     @reactive.event(input.read_zarr_file)
@@ -84,7 +84,7 @@ def simulated_traj_server(input, output, session):
         if status != "success":
             return
 
-        for layer in trajectory_layers:
+        for layer in trajectory_layers: # For previous plotted trajectories
             m.remove(layer)
         trajectory_layers.clear()
 
@@ -92,34 +92,19 @@ def simulated_traj_server(input, output, session):
         if "lat" not in ds or "lon" not in ds:
             return
 
-        lats = np.atleast_2d(ds["lat"].values)
+        lats = np.atleast_2d(ds["lat"].values) # To make sure it's 2D even if only 1 float
         lons = np.atleast_2d(ds["lon"].values)
         if lats.size == 0:
             return
 
         n_floats = lats.shape[0]
-        if n_floats > 1:
-            cmap = mpl.colormaps["viridis"].resampled(n_floats)
-            colors = [mcolors.to_hex(cmap(i)) for i in range(n_floats)]
-        else:
-            colors = ["#2c7fb8"]
+        cmap = mpl.colormaps["viridis"].resampled(n_floats) if n_floats > 1 else None
+        colors = [mcolors.to_hex(cmap(i)) for i in range(n_floats)] if cmap else ["#2c7fb8"]
 
-        all_points = []
         for color, lat_row, lon_row in zip(colors, lats, lons, strict=True):
-            mask = np.isfinite(lat_row) & np.isfinite(lon_row)
-            if not mask.any():
-                continue
-            path = list(zip(lat_row[mask].tolist(), lon_row[mask].tolist(), strict=True))
-
+            path = list(zip(lat_row.tolist(), lon_row.tolist()))
             line = Polyline(locations=path, color=color, weight=2, fill=False)
             m.add(line)
             trajectory_layers.append(line)
-
-            all_points.extend(path)
-
-        if all_points:
-            lats_all = [p[0] for p in all_points]
-            lons_all = [p[1] for p in all_points]
-            m.fit_bounds([[min(lats_all), min(lons_all)], [max(lats_all), max(lons_all)]])
 
     return read_zarr_file
