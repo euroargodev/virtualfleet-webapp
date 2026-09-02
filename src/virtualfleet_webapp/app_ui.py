@@ -16,10 +16,6 @@ app_ui = ui.page_fluid(
     ui.head_content(
         ui.tags.link(
             rel="stylesheet",
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css",
-        ),
-        ui.tags.link(
-            rel="stylesheet",
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css",
         ),
         ui.tags.link(rel="stylesheet", href="styles.css"),
@@ -78,38 +74,42 @@ app_ui = ui.page_fluid(
     ),
     # Footer
     ui.div(
+        ui.p(
+            "This repository is developed within the framework of the Euro-Argo ONE project.",
+            style="margin-bottom: 4px;",
+        ),
+        ui.p(
+            "This project has received funding from the European Union's Horizon 2020 research "
+            "and innovation programme under project no ",
+            ui.tags.strong("101188133"),
+            ".",
+            style="margin-bottom: 4px;",
+        ),
+        ui.p(
+            "Call ",
+            ui.tags.strong("HORIZON-INFRA-2024-DEV-03"),
+            ": Developing, consolidating and optimising the European research infrastructures "
+            "landscape, maintaining global leadership.",
+            style="margin-bottom: 12px;",
+        ),
         ui.div(
-            ui.div(
-                ui.a(
-                    ui.HTML('<i class="fa-brands fa-github"></i> GitHub'),
-                    href="https://github.com/euroargodev",
-                    target="_blank",
-                    class_="footer-link",
-                    style="font-weight: 700; margin-right: 20px;",
-                ),
-                ui.a(
-                    ui.HTML('<i class="fa-solid fa-envelope"></i> Contact'),
-                    href="mailto:florian@fricour.com",
-                    class_="footer-link",
-                    style="font-weight: 700;",
-                ),
+            ui.a(
+                "Euro-Argo Website",
+                href="https://www.euro-argo.eu/",
+                target="_blank",
+                class_="footer-link",
+                style="font-weight: 700;",
             ),
-            ui.div(
-                "Built with ",
-                ui.a(
-                    "Shiny for Python",
-                    href="https://shiny.posit.co/py/",
-                    target="_blank",
-                    class_="footer-link",
-                    style="font-weight: 700;",
-                ),
-            ),
-            style=(
-                "display: flex; align-items: center; justify-content: space-between; "
-                "padding: 15px; font-size: 0.85rem; color: var(--bs-secondary-color);"
+            ui.span(" | ", style="margin: 0 10px;"),
+            ui.a(
+                "GitHub",
+                href="https://github.com/euroargodev",
+                target="_blank",
+                class_="footer-link",
+                style="font-weight: 700;",
             ),
         ),
-        style="border-top: 1px solid var(--bs-secondary-colour); margin-top: 20px;",
+        style=("text-align: center; padding: 10px; font-size: 0.85rem; color: #6B6B6B;"),
     ),
     # use brand theme
     theme=ui.Theme.from_brand(__file__),

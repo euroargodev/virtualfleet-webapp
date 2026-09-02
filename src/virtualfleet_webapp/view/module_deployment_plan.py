@@ -41,6 +41,7 @@ def deployment_plan_ui():
 def deployment_plan_map_ui():
     return ui.card(
         output_widget("map"),
+        max_height="80vh", # 80% of the viewport height
     )
 
 
@@ -63,7 +64,7 @@ def deployment_plan_server(input, output, session):
     #######
     m = Map(
         center=(0, 0),
-        zoom=2,
+        zoom=3,
         basemap=basemaps.Esri.WorldImagery,
         scroll_wheel_zoom=True,
     )
@@ -89,7 +90,7 @@ def deployment_plan_server(input, output, session):
     def add_or_remove(store, action, value):
         current = store()
         if action == "create":
-            store.set(*current, [value]) # avoid mutation (like .append(), which will not trigger the reactive graph)
+            store.set([*current, value]) # avoid mutation (like .append(), which will not trigger the reactive graph)
         elif action == "remove" and value in current:
             current = (
                 current.copy()
@@ -133,11 +134,18 @@ def deployment_plan_server(input, output, session):
                     )
                     dc.clear_polylines()
                     continue
+                # Prevent the user from drawing multiple lines 
+                if action == "create" and line_markers():
+                    ui.notification_show(
+                        "Can't have more than one deployment line.",
+                        type="error",
+                    )
+                    dc.clear_polylines()
+                    line_markers.set([])
+                    continue
                 add_or_remove(line_markers, action, geom["coordinates"])
 
             elif geom_type in ("Polygon"):
-                print(geom_type)
-                print(len(geom["coordinates"]))
                 if action == "create" and (point_markers() or line_markers()):
                     ui.notification_show(
                         "Can't mix a rectangle with existing markers/line — clear it first.",
@@ -145,15 +153,16 @@ def deployment_plan_server(input, output, session):
                     )
                     dc.clear_polygons()
                     continue
-                if action == "create" and len(geom["coordinates"]) > 1:
+                if action == "create" and shape_markers():
                     ui.notification_show(
                         "Can't have more than one rectangle.",
                         type="error",
                     )
                     dc.clear_polygons()
+                    shape_markers.set([])
                     continue
-                # TODO
-                #add_or_remove(shape_markers, action, geom["coordinates"])
+                print(geom["coordinates"])
+                add_or_remove(shape_markers, action, geom["coordinates"])
 
     dc.on_draw(handle_draw)
     m.add(dc)
@@ -249,6 +258,8 @@ def deployment_plan_server(input, output, session):
             return
         deployment_points.set(points)
         last_validated_option.set("A")
+        if point_markers():
+            ui.update_numeric(id="num_floats", value=len(point_markers()))
         ui.notification_show("Plan OK", type="message")
 
     @reactive.effect

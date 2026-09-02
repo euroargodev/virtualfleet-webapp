@@ -12,7 +12,7 @@ def speed_field_ui():
     return ui.TagList(
         section_title(
             1,
-            "Speed Field",
+            "Velocity Field",
             tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
         ),
         ui.input_text(
