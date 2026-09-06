@@ -23,14 +23,6 @@ def section_title(number, text, tooltip=None):
     return heading
 
 
-def check_nc_file(value):
-    if not value.endswith(".nc"):
-        return "File should be a NetCDF file."
-    if not Path(value).exists():
-        return "File not found at this path."
-    return None
-
-
 # Speed field
 def check_config_file(value):
     """Validate an uploaded variable mapping config file.
@@ -80,6 +72,17 @@ def read_config_file(config_file):
     """
     with Path(config_file).open() as f:
         return json.load(f)
+    
+
+def get_velocity_extent(velocity):
+    lat, lon = velocity.dim['lat'], velocity.dim['lon']
+    ds = velocity.field
+    return {
+        "lat_min": ds[lat].min().item(),
+        "lat_max": ds[lat].max().item(),
+        "lon_min": ds[lon].min().item(),
+        "lon_max": ds[lon].max().item(),
+    }
 
 
 # Deployment plan module
@@ -138,8 +141,8 @@ def resolve_deployment_points(points, lines, shapes, num_floats):
             raise ValueError("Set 'Number of floats' to at least 2 for a line deployment.")
         return interpolate_along_line(lines[0], num_floats)
     if shapes:
-        if not num_floats or num_floats < 4:
-            raise ValueError("Set 'Number of floats' to at least 4 for a polygon deployment.")
+        if not num_floats or num_floats < 3:
+            raise ValueError("Set 'Number of floats' to at least 3 for a polygon deployment.")
         return grid_points_in_rectangle(shapes[0], num_floats)
     return points
 

@@ -1,10 +1,11 @@
 import asyncio
 
+import xarray as xr
 from shiny import module, reactive, ui
 from shiny_validate import InputValidator
 from virtualargofleet import Velocity
 
-from virtualfleet_webapp.logic.utils import check_config_file, check_nc_file, read_config_file, section_title
+from virtualfleet_webapp.logic.utils import check_config_file, get_velocity_extent, read_config_file, section_title
 
 
 @module.ui
@@ -15,9 +16,7 @@ def speed_field_ui():
             "Velocity Field",
             tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
         ),
-        ui.input_text(
-            id="speed_field_path", label="", value="./data/cmems_speed_field.nc", placeholder="Path to speed field"
-        ),
+        ui.input_file(id="speed_field_path", label="", placeholder="Import velocity field data", accept=[".nc"], multiple=True),
         ui.input_file(id="upload_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
         ui.hr({"class": "section-divider"}),
     )
@@ -28,7 +27,6 @@ def speed_field_server(input, output, session):
 
     # Add InputValidator to validate path to speed field
     iv = InputValidator()
-    iv.add_rule("speed_field_path", check_nc_file)
     iv.add_rule("upload_config_file", check_config_file)
     iv.enable()
 
@@ -45,10 +43,11 @@ def speed_field_server(input, output, session):
             return
         var_mapping.set(config)
 
-    def _build_velocity_field(path, mapping): # Internal use, should not be used elsewhere
+    def _build_velocity_field(paths, mapping): # Internal use, should not be used elsewhere
+        src = xr.combine_by_coords([xr.open_dataset(p) for p in paths])
         return Velocity(
             model="custom",
-            src={"U": path, "V": path},
+            src=src,
             variables=mapping["variables"],
             dimensions=mapping["dimensions"],
         )
@@ -56,18 +55,19 @@ def speed_field_server(input, output, session):
     # Opening a NetCDF can take a while (e.g. size) so better 
     # use an async process (if app deployed on server at some point)  
     @reactive.extended_task
-    async def _load_velocity_field(path, mapping):
-        return await asyncio.to_thread(_build_velocity_field, path, mapping)
+    async def _load_velocity_field(paths, mapping):
+        return await asyncio.to_thread(_build_velocity_field, paths, mapping)
 
     @reactive.effect
     def _():
         mapping = var_mapping()
         if mapping is None: # Check if mapping exists
             return
-        path = input.speed_field_path()
-        if check_nc_file(path) is not None: # If NetCDF file is good, we're good to go !
+        files = input.speed_field_path()
+        if not files:  # No file uploaded yet
             return
-        _load_velocity_field(path, mapping)
+        paths = [f["datapath"] for f in files]
+        _load_velocity_field(paths, mapping)
 
     @reactive.effect
     def _():
@@ -83,4 +83,11 @@ def speed_field_server(input, output, session):
             return None
         return _load_velocity_field.result()
 
-    return velocity_field
+    @reactive.calc
+    def velocity_field_extent():
+        v = velocity_field()
+        if v is None:
+            return None
+        return get_velocity_extent(v)
+
+    return velocity_field, velocity_field_extent

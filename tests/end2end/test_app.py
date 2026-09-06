@@ -23,7 +23,7 @@ def notification_text(page: Page):
 def test_speed_field_defaults_are_visible(page: Page, app: ShinyAppProc) -> None:
     page.goto(app.url)
 
-    controller.InputText(page, "speed_field-speed_field_path").expect_value("./data/cmems_speed_field.nc")
+    controller.InputFile(page, "speed_field-speed_field_path").expect.to_be_visible()
     controller.InputFile(page, "speed_field-upload_config_file").expect.to_be_visible()
 
 

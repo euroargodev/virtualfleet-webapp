@@ -2,7 +2,7 @@ import json
 import uuid
 
 import numpy as np
-from ipyleaflet import GeomanDrawControl, Map, Marker, ScaleControl, basemaps
+from ipyleaflet import GeomanDrawControl, Map, Marker, Rectangle, ScaleControl, basemaps
 from shiny import module, reactive, render, ui
 from shinywidgets import output_widget, render_widget
 
@@ -46,7 +46,7 @@ def deployment_plan_map_ui():
 
 
 @module.server
-def deployment_plan_server(input, output, session):
+def deployment_plan_server(input, output, session, velocity_field_extent):
 
     # Reactive state for the deployment plan
     deployment_points = reactive.Value([])  # Option A: drawn on the map
@@ -166,6 +166,29 @@ def deployment_plan_server(input, output, session):
 
     dc.on_draw(handle_draw)
     m.add(dc)
+
+    # Add velocity field extent layer to the map.
+    extent_layer = []
+
+    @reactive.effect
+    def _():
+        extent = velocity_field_extent()
+
+        if extent_layer:
+            m.remove(extent_layer[0])
+            extent_layer.clear()
+
+        if extent is None:
+            return
+
+        rectangle = Rectangle(
+            bounds=((extent["lat_min"], extent["lon_min"]), (extent["lat_max"], extent["lon_max"])),
+            color="yellow",
+            fill=False,
+            weight=2,
+        )
+        m.add(rectangle)
+        extent_layer.append(rectangle)
 
     def clear_all_layers():
         dc.clear_markers()

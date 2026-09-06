@@ -2,9 +2,11 @@
 # and reviewed later on by a human.
 import datetime
 import json
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from virtualfleet_webapp.logic.utils import (
     build_deployment_plan_geojson,
@@ -13,6 +15,7 @@ from virtualfleet_webapp.logic.utils import (
     check_config_file,
     check_positive_number,
     flatten_mission_config,
+    get_velocity_extent,
     interpolate_along_line,
     read_config_file,
     read_deployment_plan,
@@ -125,16 +128,29 @@ class TestResolveDeploymentPoints:
         result = resolve_deployment_points([], [first, second], [], num_floats=2)
         assert result == interpolate_along_line(first, 2)
 
-    #def test_shape_requires_at_least_one_float(self):
-    #    with pytest.raises(ValueError, match="at least 1 for a polygon deployment"):
-    #        resolve_deployment_points([], [], [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0)]], num_floats=0)
+    def test_shape_requires_at_least_three_floats(self):
+        rectangle = [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]]
+        with pytest.raises(ValueError, match="at least 3 for a polygon deployment"):
+            resolve_deployment_points([], [], [rectangle], num_floats=2)
 
-    def test_shape_deployment_is_not_implemented_yet(self):
-        # resolve_deployment_points() returns a placeholder `0` for shapes today
-        # (see the "# Needs to be implemented" note in logic/utils.py). Update this
-        # test once real polygon-based point generation lands.
-        shape = [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0)]]
-        assert resolve_deployment_points([], [], shape, num_floats=3) == 0
+    def test_shape_grids_points_inside_the_rectangle(self):
+        rectangle = [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]]
+        result = resolve_deployment_points([], [], [rectangle], num_floats=4)
+        assert len(result) == 4
+        assert all(0.0 <= p["lon"] <= 1.0 and 0.0 <= p["lat"] <= 1.0 for p in result)
+
+
+class TestGetVelocityExtent:
+    def test_returns_the_min_max_bounds_of_the_field(self):
+        ds = xr.Dataset(coords={"latitude": [10.0, 20.0, 30.0], "longitude": [-5.0, 0.0, 5.0]})
+        velocity = SimpleNamespace(dim={"lat": "latitude", "lon": "longitude"}, field=ds)
+
+        assert get_velocity_extent(velocity) == {
+            "lat_min": 10.0,
+            "lat_max": 30.0,
+            "lon_min": -5.0,
+            "lon_max": 5.0,
+        }
 
 
 class TestBuildGeojson:
