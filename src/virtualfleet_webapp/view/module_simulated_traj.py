@@ -1,31 +1,41 @@
 import asyncio
+import tempfile
 
-import matplotlib as mpl
-import matplotlib.colors as mcolors
 import numpy as np
 import xarray as xr
-from ipyleaflet import Map, Polyline, ScaleControl, basemaps
+from ipyleaflet import CircleMarker, Map, Polyline, ScaleControl, basemaps
+from ipywidgets import HTML
 from shiny import module, reactive, ui
 from shinywidgets import output_widget, render_widget
+from virtualargofleet.utilities import simu2csv
+
+from virtualfleet_webapp.logic.utils import read_index_prof
 
 
 @module.ui
 def simulated_traj_ui():
-    return ui.TagList(
-        ui.input_text(
-            id="simulated_traj_path",
-            label="Path to simulation output",
-            value="./simulations/default.zarr",
-            placeholder="Path to simulation results",
+    # Sidebar layout
+    return ui.layout_sidebar(
+        ui.sidebar(
+            ui.input_text(
+                id="simulated_traj_path",
+                label="Path to simulation output",
+                value="./simulations/default.zarr",
+                placeholder="Path to simulation results",
+            ),
+            ui.input_task_button(
+                id="read_zarr_file",
+                label=ui.HTML("Read zarr file"),
+                class_="btn-primary",
+                label_busy="Reading..."
+            ),
+            gap=10,  # Vertical spacing in the sidebar
         ),
-        ui.input_task_button(
-            id="read_zarr_file",
-            label=ui.HTML("Read zarr file"),
-            class_="btn-primary",
-            label_busy="Reading...",
-            width="300px",
-        ),
-        ui.card(output_widget("map_traj")),
+        # Main panel
+        ui.card(
+            output_widget("map_traj"),
+            max_height="80vh", # 80% of the viewport height
+        )
     )
 
 
@@ -37,7 +47,7 @@ def simulated_traj_server(input, output, session):
     #######
     m = Map(
         center=(0, 0),
-        zoom=2,
+        zoom=3,
         basemap=basemaps.Esri.WorldImagery,
         scroll_wheel_zoom=True,
     )
@@ -45,7 +55,8 @@ def simulated_traj_server(input, output, session):
     # Add options
     m.add(ScaleControl(position="bottomleft"))
 
-    trajectory_layers = []
+    deployment_markers = [] # Markers for the floats' initial positions
+    selected_profile_layers = [] # Trajectory currently shown on click
 
     @output
     @render_widget
@@ -68,8 +79,96 @@ def simulated_traj_server(input, output, session):
     def _():
         read_zarr_file(input.simulated_traj_path())
 
-    # Plot one trajectory (polyline) per float, replacing whatever was drawn
-    # for a previously read file.
+    ######################
+    # Read index profile #
+    ######################
+    def _read_index_data(zarr_path):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            index_file = simu2csv(zarr_path, index_file=f"{tmp_dir}/index.txt")
+            return read_index_prof(index_file)
+
+    @reactive.extended_task
+    async def read_index_data(zarr_path):
+        return await asyncio.to_thread(_read_index_data, zarr_path)
+
+    @reactive.effect
+    def _():
+        # No need to read the index data if the zarr file was not successiully loaded
+        if read_zarr_file.status() != "success":
+            return
+        read_index_data(input.simulated_traj_path())
+
+    @reactive.effect
+    def _():
+        if read_index_data.status() == "error":
+            try:
+                read_index_data.result()
+            except Exception as e:
+                ui.notification_show(f"Could not read index data: {e}", type="error")
+
+    @reactive.calc
+    def index_data():
+        if read_index_data.status() != "success":
+            return None
+        return read_index_data.result()
+    
+    #@reactive.effect
+    #def _():
+    #    print(read_index_data.result())
+
+    def _show_trajectory(float_index, lat_init, lon_init):
+        """
+        Returns a function that shows the trajectory of the float with the given index
+        when called. The trajectory is built from the profile index data.
+        """
+        def _on_click(**kwargs): # need to accept **kwargs because of ipyleaflet's on_click 
+            for layer in selected_profile_layers:
+                m.remove(layer)
+            selected_profile_layers.clear() # clear previous trajectory
+
+            df = index_data() # read index data from the reactive value
+            if df is None:
+                return
+
+            unique_wmos = sorted(df["wmo"].unique()) # Get unique WMO numbers
+
+            profile = df[df["wmo"] == unique_wmos[float_index]].sort_values("cycle_number")
+            if profile.empty:
+                return
+
+            trajectory = list(zip(profile["latitude"], profile["longitude"], strict=True))
+            trajectory.insert(0, (lat_init, lon_init)) # Add initial position at the beginning
+            line = Polyline(locations=trajectory, color="#2c7fb8", weight=2, fill=False)
+            m.add(line)
+            selected_profile_layers.append(line)
+
+            for row in profile.itertuples(): # Better than iterrows() here (simpler acess to fields)
+                popup = HTML(
+                    value=(
+                        f"<b>Float</b> {row.wmo}<br>"
+                        f"<b>Cycle</b> {row.cycle_number}<br>"
+                        f"<b>Datetime</b> {row.date}<br>"
+                        f"<b>Latitude</b> {row.latitude:.3f}<br>"
+                        f"<b>Longitude</b> {row.longitude:.3f}"
+                    )
+                )
+                point = CircleMarker(
+                    location=(row.latitude, row.longitude),
+                    radius=5,
+                    color="#2c7fb8",
+                    fill_color="#2c7fb8",
+                    fill_opacity=1,
+                    weight=1,
+                    popup=popup,
+                )
+                m.add(point)
+                selected_profile_layers.append(point)
+
+        return _on_click
+
+    # Plot each float's initial (deployment) position, replacing whatever was
+    # drawn for a previously read file. Click a marker to reveal its
+    # full trajectory, built from the profile index data.
     @reactive.effect
     def _():
         status = read_zarr_file.status()
@@ -80,13 +179,15 @@ def simulated_traj_server(input, output, session):
             except Exception as e:
                 ui.notification_show(f"Could not read zarr file: {e}", type="error")
             return
-
         if status != "success":
             return
 
-        for layer in trajectory_layers: # For previous plotted trajectories
+        for marker in deployment_markers: # For previous markers/trajectory
+            m.remove(marker)
+        deployment_markers.clear()
+        for layer in selected_profile_layers:
             m.remove(layer)
-        trajectory_layers.clear()
+        selected_profile_layers.clear()
 
         ds = read_zarr_file.result()
         if "lat" not in ds or "lon" not in ds:
@@ -97,14 +198,19 @@ def simulated_traj_server(input, output, session):
         if lats.size == 0:
             return
 
-        n_floats = lats.shape[0]
-        cmap = mpl.colormaps["viridis"].resampled(n_floats) if n_floats > 1 else None
-        colors = [mcolors.to_hex(cmap(i)) for i in range(n_floats)] if cmap else ["#2c7fb8"]
-
-        for color, lat_row, lon_row in zip(colors, lats, lons, strict=True):
-            path = list(zip(lat_row.tolist(), lon_row.tolist(), strict=True))
-            line = Polyline(locations=path, color=color, weight=2, fill=False)
-            m.add(line)
-            trajectory_layers.append(line)
+        for i, (lat_row, lon_row) in enumerate(zip(lats, lons, strict=True)):
+            marker = CircleMarker(
+                location=(float(lat_row[0]), float(lon_row[0])),
+                draggable=False,
+                radius=5,
+                color="#2c7fb8",
+                fill_color="#2c7fb8",
+                fill_opacity=1,
+                weight=1,
+                #popup=HTML(value=f"<b>Float {i}</b><br>")
+            )
+            marker.on_click(_show_trajectory(i, float(lat_row[0]), float(lon_row[0])))
+            m.add(marker)
+            deployment_markers.append(marker)
 
     return read_zarr_file

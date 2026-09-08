@@ -1,7 +1,7 @@
 import asyncio
 
 import xarray as xr
-from shiny import module, reactive, ui
+from shiny import module, reactive, render, ui
 from shiny_validate import InputValidator
 from virtualargofleet import Velocity
 
@@ -16,8 +16,20 @@ def speed_field_ui():
             "Velocity Field",
             tooltip="Path to the velocity field used by VirtualFleet to simulate float trajectories.",
         ),
-        ui.input_file(id="speed_field_path", label="", placeholder="Import velocity field data", accept=[".nc"], multiple=True),
-        ui.input_file(id="upload_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
+        # Hidden radio group driving which card is "selected"
+        ui.div(
+            {"class": "option-radio"},
+            ui.input_radio_buttons(
+                id="speed_field_mode",
+                label=None,
+                choices={"A": "Browse local data", "B": "Provide path to data"},
+                selected="A",
+            ),
+        ),
+        # Option A card
+        ui.output_ui("card_browse_speed_field"),
+        # Option B card
+        ui.output_ui("card_write_speed_field"),
         ui.hr({"class": "section-divider"}),
     )
 
@@ -25,23 +37,82 @@ def speed_field_ui():
 @module.server
 def speed_field_server(input, output, session):
 
-    # Add InputValidator to validate path to speed field
     iv = InputValidator()
-    iv.add_rule("upload_config_file", check_config_file)
+    iv.add_rule("browse_config_file", check_config_file)
+    iv.add_rule("write_config_file", check_config_file)
     iv.enable()
 
-    # Variable mapping
-    var_mapping = reactive.value(None)
+    last_validated_option = reactive.Value(None) 
 
     @reactive.effect
-    @reactive.event(input.upload_config_file)
+    @reactive.event(input.pick_a)
     def _():
-        try:
-            config = read_config_file(input.upload_config_file()[0]["datapath"])
-        except Exception: # Technically, should not happen because of check_config_file() occuring before.
-            ui.notification_show("Could not read the config file.", type="error")
-            return
-        var_mapping.set(config)
+        ui.update_radio_buttons(id="speed_field_mode", selected="A")
+
+    @reactive.effect
+    @reactive.event(input.pick_b)
+    def _():
+        ui.update_radio_buttons(id="speed_field_mode", selected="B")
+
+    @render.ui
+    def card_browse_speed_field():
+        selected = input.speed_field_mode() == "A"
+        card_class = "option-card selected" if selected else "option-card collapsed"
+
+        # Header made with the help of AI (Claude Sonnet 5)
+        header = ui.div(
+            {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_a')}', Math.random())"},
+            ui.tags.i(class_="fa-solid fa-folder-open"),
+            "Browse local data",
+        )
+
+        if not selected:
+            return ui.div({"class": card_class}, header)
+
+        return ui.div(
+            {"class": card_class},
+            header,
+            ui.input_file(
+                id="browse_speed_field_path",
+                label="",
+                placeholder="Import local velocity field",
+                accept=[".nc"],
+                multiple=True,
+            ),
+            ui.input_file(id="browse_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
+            ui.input_action_button(
+                id="validate_speed_field_a",
+                label=ui.HTML('<i class="fa-solid fa-check"></i> Validate velocity field'),
+                style="width: 100%; background: var(--bs-primary); color: white; border: none;",
+            ),
+        )
+
+    @render.ui
+    def card_write_speed_field():
+        selected = input.speed_field_mode() == "B"
+        card_class = "option-card selected" if selected else "option-card collapsed"
+
+        # Header made with the help of AI (Claude Sonnet 5)
+        header = ui.div(
+            {"class": "option-header", "onclick": f"Shiny.setInputValue('{session.ns('pick_b')}', Math.random())"},
+            ui.tags.i(class_="fa-solid fa-keyboard"),
+            "Provide path to data",
+        )
+
+        if not selected:
+            return ui.div({"class": card_class}, header)
+
+        return ui.div(
+            {"class": card_class},
+            header,
+            ui.input_text(id="write_speed_field_path", label="", placeholder="Path to velocity field", value="./data/part1.nc"),
+            ui.input_file(id="write_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]),
+            ui.input_action_button(
+                id="validate_speed_field_b",
+                label=ui.HTML('<i class="fa-solid fa-check"></i> Validate velocity field'),
+                style="width: 100%; background: var(--bs-primary); color: white; border: none;",
+            ),
+        )
 
     def _build_velocity_field(paths, mapping): # Internal use, should not be used elsewhere
         src = xr.combine_by_coords([xr.open_dataset(p) for p in paths])
@@ -52,30 +123,67 @@ def speed_field_server(input, output, session):
             dimensions=mapping["dimensions"],
         )
 
-    # Opening a NetCDF can take a while (e.g. size) so better 
-    # use an async process (if app deployed on server at some point)  
+    # Opening a NetCDF can take a while (e.g. size) so better
+    # use an async process (if app deployed on server at some point)
     @reactive.extended_task
     async def _load_velocity_field(paths, mapping):
         return await asyncio.to_thread(_build_velocity_field, paths, mapping)
 
     @reactive.effect
+    @reactive.event(input.validate_speed_field_a)
     def _():
-        mapping = var_mapping()
-        if mapping is None: # Check if mapping exists
+        files = input.browse_speed_field_path()
+        if not files:
+            ui.notification_show("Select local velocity field file(s).", type="error")
             return
-        files = input.speed_field_path()
-        if not files:  # No file uploaded yet
+        config_file = input.browse_config_file()
+        if not config_file:
+            ui.notification_show("Upload a variable mapping config file.", type="error")
+            return
+        if not iv.is_valid():
+            ui.notification_show("Fix the mapping file.", type="error")
+            return
+        try:
+            mapping = read_config_file(config_file[0]["datapath"])
+        except Exception:
+            ui.notification_show("Could not read the config file.", type="error")
             return
         paths = [f["datapath"] for f in files]
+        last_validated_option.set("A")
         _load_velocity_field(paths, mapping)
 
     @reactive.effect
+    @reactive.event(input.validate_speed_field_b)
     def _():
-        if _load_velocity_field.status() == "error":
+        path = input.write_speed_field_path()
+        if not path:
+            ui.notification_show("Provide a path to the velocity field.", type="error")
+            return
+        config_file = input.write_config_file()
+        if not config_file:
+            ui.notification_show("Upload a variable mapping config file.", type="error")
+            return
+        if not iv.is_valid():
+            ui.notification_show("Fix the mapping file.", type="error")
+            return
+        try:
+            mapping = read_config_file(config_file[0]["datapath"])
+        except Exception:
+            ui.notification_show("Could not read the config file.", type="error")
+            return
+        last_validated_option.set("B")
+        _load_velocity_field([path], mapping)
+
+    @reactive.effect
+    def _():
+        status = _load_velocity_field.status()
+        if status == "error":
             try:
                 _load_velocity_field.result()
             except Exception as e:
                 ui.notification_show(f"Could not load speed field: {e}", type="error")
+        elif status == "success" and last_validated_option() is not None:
+            ui.notification_show("Velocity field OK", type="message")
 
     @reactive.calc
     def velocity_field():

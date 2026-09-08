@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from shiny import ui
 
 
@@ -279,3 +280,35 @@ def flatten_mission_config(config):
     if isinstance(config, list):
         return [_flatten_single_mission_config(c) for c in config]
     return _flatten_single_mission_config(config)
+
+
+# Simulated results module
+def read_index_prof(index_file):
+    """Read a VirtualFleet simulation profile index CSV file
+    (produced by simu2csv) and keep only the WMO, cycle number,
+    data, longitude and latitude
+
+    Index file should look like this:
+
+    # Title : Profile directory file of a VirtualFleet simulation
+    # Description : Profiles from simulation result file: /path/to/simulation.zarr
+    # Project : ARGO, EARISE
+    # Format version : 2.0
+    # Date of update : 20260907132051
+    # FTP root number 1 : ftp://ftp.ifremer.fr/ifremer/argo/dac
+    # FTP root number 2 : ftp://usgodae.org/pub/outgoing/argo/dac
+    # GDAC node : -
+    file,date,latitude,longitude,ocean,profiler_type,institution,date_update    
+    vf/9000000/profiles/R9000000_01.nc,20260110230000,42.742,7.269,A,999,VF,20260907132052
+    vf/9000000/profiles/R9000000_02.nc,20260120230000,42.551,7.356,A,999,VF,20260907132052
+    vf/9000000/profiles/R9000000_03.nc,20260130230000,42.705,7.731,A,999,VF,20260907132052
+
+    """
+
+    df = pd.read_csv(index_file, comment="#")
+    extracted = df["file"].str.extract(r"R(\d+)_(\d+)\.nc")
+    df["wmo"] = extracted[0].astype(int)
+    df["cycle_number"] = extracted[1].astype(int)
+    df["date"] = pd.to_datetime(df["date"], format="%Y%m%d%H%M%S")
+
+    return df[["wmo", "cycle_number", "date", "latitude", "longitude"]]
