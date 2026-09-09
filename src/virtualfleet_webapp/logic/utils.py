@@ -1,9 +1,11 @@
+import glob
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from shiny import ui
 
 
@@ -75,9 +77,27 @@ def read_config_file(config_file):
         return json.load(f)
     
 
+def resolve_speed_field_path(path):
+    """Resolve a velocity field path (user-provided) suitable for Velocity(src=...).
+    Either a file path directly or a glob pattern if `path` is a directory.
+    """
+    p = Path(path)
+    if p.is_dir():
+        return str(p / "*.nc") # take str and not a list
+    return str(p)
+
+
 def get_velocity_extent(velocity):
+    """Get the extent of a velocity field (min/max lat/lon)"""
     lat, lon = velocity.dim['lat'], velocity.dim['lon']
-    ds = velocity.field
+    field = velocity.field
+
+    # See also https://github.com/euroargodev/VirtualFleet/blob/master/virtualargofleet/velocity_helpers.py
+    if isinstance(field, dict): # for option B
+        ds = xr.open_dataset(glob.glob(field['U'])[0])  
+    else:
+        ds = field # for option A (directly a xr.Dataset)
+
     return {
         "lat_min": ds[lat].min().item(),
         "lat_max": ds[lat].max().item(),
@@ -149,6 +169,7 @@ def resolve_deployment_points(points, lines, shapes, num_floats):
 
 
 def build_geojson(points, start_date):
+    """Create a GeoJSON FeatureCollection from a list of points and a start date."""
     timestamp = start_date.strftime("%Y-%m-%d")
     return {
         "type": "FeatureCollection",
@@ -156,7 +177,7 @@ def build_geojson(points, start_date):
             {
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [p["lon"], p["lat"]]},
-                "properties": {"timestamp": timestamp, "depth": 0},
+                "properties": {"timestamp": timestamp, "depth": 1},
             }
             for p in points
         ],
