@@ -57,7 +57,7 @@ app_ui = ui.page_fluid(
             simulation_ui("simulation"),
             # Sidebar layout options
             bg="",
-            width=400,
+            width=420,
             gap=10,  # Vertical spacing in the sidebar
         ),
         # Main panel content
@@ -71,6 +71,7 @@ app_ui = ui.page_fluid(
                 simulated_traj_ui("simulated_traj"),
             ),
         ),
+        height="80vh" # For a scrollable sidebar.
     ),
     # Footer
     ui.div(

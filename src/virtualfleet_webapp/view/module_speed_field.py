@@ -91,7 +91,7 @@ def speed_field_server(input, output, session):
             ui.input_file(
                 id="browse_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]
             ),
-            ui.input_action_button(
+            ui.input_task_button(
                 id="validate_speed_field_a",
                 label=ui.HTML('<i class="fa-solid fa-check"></i> Validate velocity field'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none;",
@@ -125,7 +125,7 @@ def speed_field_server(input, output, session):
             ui.input_file(
                 id="write_config_file", label="", placeholder="Import variable mapping file", accept=[".json"]
             ),
-            ui.input_action_button(
+            ui.input_task_button(
                 id="validate_speed_field_b",
                 label=ui.HTML('<i class="fa-solid fa-check"></i> Validate velocity field'),
                 style="width: 100%; background: var(--bs-primary); color: white; border: none;",

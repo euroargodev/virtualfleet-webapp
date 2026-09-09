@@ -2,17 +2,18 @@ import json
 import uuid
 
 import numpy as np
-from ipyleaflet import ( 
+from ipyleaflet import (
     basemaps,
     basemap_to_tiles,
-    GeomanDrawControl, 
+    GeomanDrawControl,
     LayersControl,
-    Map, 
-    Marker, 
-    Rectangle, 
-    ScaleControl, 
-
+    Map,
+    Marker,
+    Rectangle,
+    ScaleControl,
+    WidgetControl,
 )
+from ipywidgets import Button
 from shiny import module, reactive, render, ui
 from shinywidgets import output_widget, render_widget
 
@@ -87,18 +88,14 @@ def deployment_plan_server(input, output, session, velocity_field_extent):
     m = Map(
         center=(0, 0),
         zoom=3,
+        zoom_control=False,
         layers=[openstreetmap, opentopomap, esri_world_imagery],
         scroll_wheel_zoom=True,
     )
 
-    m.add_control(LayersControl(position="topright"))  # Allow the user to switch between basemaps
-
-    # Add options
-    m.add(ScaleControl(position="bottomleft"))
-
     # Drawing control for markers, lines and polygons, check also https://geoman.io/docs/leaflet/toolbar
     dc = GeomanDrawControl(
-        position="topright",
+        position="topleft",
         marker={"pathOptions": {}},
         circlemarker={},
         polyline={"pathOptions": {}},
@@ -108,6 +105,21 @@ def deployment_plan_server(input, output, session, velocity_field_extent):
         drag=True,
         cut=False,
         rotate=False,
+    )
+
+    # Add a reset button to clear all drawn markers/lines/polygons on the map
+    reset_button = Button(
+        icon="refresh",
+        tooltip="Reset drawing/markers",
+        style=dict(
+            button_color="white",
+            font_color="black"
+        ),
+        layout=dict(
+            width="28px",
+            height="28px",
+            padding="0"
+        )
     )
 
     # Add or remove drawn objects
@@ -191,6 +203,23 @@ def deployment_plan_server(input, output, session, velocity_field_extent):
     dc.on_draw(handle_draw)
     m.add(dc)
 
+    # Add options
+    m.add(ScaleControl(position="bottomleft"))
+    m.add(LayersControl(position="topright"))  # Allow the user to switch between basemaps
+    m.add(WidgetControl(widget=reset_button, position="topleft"))
+
+    def clear_all_layers():
+        dc.clear()
+
+    def _on_reset_click(_): # argument is not used, but needed for the callback signature
+        clear_all_layers()
+        point_markers.set([])
+        line_markers.set([])
+        shape_markers.set([])
+
+    # Apply reset when button is clicked
+    reset_button.on_click(_on_reset_click)
+
     # Add velocity field extent layer to the map.
     extent_layer = []
 
@@ -212,12 +241,8 @@ def deployment_plan_server(input, output, session, velocity_field_extent):
             weight=2,
         )
         m.add(rectangle)
+        m.fit_bounds([[extent["lat_min"], extent["lon_min"]], [extent["lat_max"], extent["lon_max"]]])
         extent_layer.append(rectangle)
-
-    def clear_all_layers():
-        dc.clear_markers()
-        dc.clear_polylines()
-        dc.clear_polygons()
 
     @output
     @render_widget

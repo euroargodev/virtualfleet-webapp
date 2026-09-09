@@ -132,10 +132,6 @@ def simulated_traj_server(input, output, session):
         if read_index_data.status() != "success":
             return None
         return read_index_data.result()
-    
-    #@reactive.effect
-    #def _():
-    #    print(read_index_data.result())
 
     def _show_trajectory(float_index, lat_init, lon_init):
         """

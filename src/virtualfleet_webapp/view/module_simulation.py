@@ -193,7 +193,7 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
             return ui.input_action_button(
                 id="save_simulation_disabled",
                 label=ui.HTML('<i class="fa-solid fa-save"></i> Save Simulation (.zip)'),
-                class_="btn-light",
+                class_="btn-secondary",
                 disabled=True,
             )
         return ui.download_button(
