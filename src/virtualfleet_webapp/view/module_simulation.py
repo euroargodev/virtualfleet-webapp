@@ -42,7 +42,7 @@ def _run_simulation_with_progress(vfleet, duration, step, record, output_path, o
         pyfunc=vfleet._parcels["kernels"],  # Kernel function to execute.
         runtime=duration,
         dt=step,
-        verbose_progress=True,  # Does not hurt to see the progress bar in the terminal.
+        verbose_progress=True,
         output_file=particle_set.ParticleFile(name=str(output_path), outputdt=record),
         postIterationCallbacks=[_tick],
         callbackdt=record,
@@ -120,7 +120,7 @@ def simulation_server(input, output, session, speed_field, deployment_plan, miss
 
         output_path = Path(SIMULATIONS_FOLDER) / output_file
         _run_simulation_with_progress(vfleet, duration, step, record, output_path, on_progress)
-        return vfleet
+        return # was returning vfleet that was probably messing with the RAM
 
     @ui.bind_task_button(button_id="run_simulation")
     @reactive.extended_task

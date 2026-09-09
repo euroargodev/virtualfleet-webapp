@@ -94,10 +94,15 @@ def get_velocity_extent(velocity):
 
     # See also https://github.com/euroargodev/VirtualFleet/blob/master/virtualargofleet/velocity_helpers.py
     if isinstance(field, dict): # for option B
-        ds = xr.open_dataset(glob.glob(field['U'])[0])  
-    else:
-        ds = field # for option A (directly a xr.Dataset)
+        with xr.open_dataset(glob.glob(field['U'])[0]) as ds:
+            return {
+                "lat_min": ds[lat].min().item(),
+                "lat_max": ds[lat].max().item(),
+                "lon_min": ds[lon].min().item(),
+                "lon_max": ds[lon].max().item(),
+            }
 
+    ds = field # for option A (directly a xr.Dataset)
     return {
         "lat_min": ds[lat].min().item(),
         "lat_max": ds[lat].max().item(),
