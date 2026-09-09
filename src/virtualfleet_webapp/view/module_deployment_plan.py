@@ -2,7 +2,17 @@ import json
 import uuid
 
 import numpy as np
-from ipyleaflet import GeomanDrawControl, Map, Marker, Rectangle, ScaleControl, basemaps
+from ipyleaflet import ( 
+    basemaps,
+    basemap_to_tiles,
+    GeomanDrawControl, 
+    LayersControl,
+    Map, 
+    Marker, 
+    Rectangle, 
+    ScaleControl, 
+
+)
 from shiny import module, reactive, render, ui
 from shinywidgets import output_widget, render_widget
 
@@ -62,12 +72,26 @@ def deployment_plan_server(input, output, session, velocity_field_extent):
     #######
     # MAP #
     #######
+
+    # Allow the user to choose between different basemaps
+    # Also check https://github.com/jupyter-widgets/ipyleaflet/issues/970
+    esri_world_imagery = basemap_to_tiles(basemaps.Esri.WorldImagery)
+    esri_world_imagery.base = True
+    
+    openstreetmap = basemap_to_tiles(basemaps.OpenStreetMap.Mapnik)
+    openstreetmap.base = True
+
+    opentopomap = basemap_to_tiles(basemaps.OpenTopoMap)
+    opentopomap.base = True
+
     m = Map(
         center=(0, 0),
         zoom=3,
-        basemap=basemaps.Esri.WorldImagery,
+        layers=[openstreetmap, opentopomap, esri_world_imagery],
         scroll_wheel_zoom=True,
     )
+
+    m.add_control(LayersControl(position="topright"))  # Allow the user to switch between basemaps
 
     # Add options
     m.add(ScaleControl(position="bottomleft"))

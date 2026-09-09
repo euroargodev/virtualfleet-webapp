@@ -3,7 +3,15 @@ import tempfile
 
 import numpy as np
 import xarray as xr
-from ipyleaflet import CircleMarker, Map, Polyline, ScaleControl, basemaps
+from ipyleaflet import (
+    basemaps,
+    basemap_to_tiles,
+    CircleMarker, 
+    LayersControl,
+    Map,
+    Polyline, 
+    ScaleControl
+)
 from ipywidgets import HTML
 from shiny import module, reactive, ui
 from shinywidgets import output_widget, render_widget
@@ -45,12 +53,25 @@ def simulated_traj_server(input, output, session):
     #######
     # MAP #
     #######
+    # Allow the user to choose between different basemaps
+    # Also check https://github.com/jupyter-widgets/ipyleaflet/issues/970
+    esri_world_imagery = basemap_to_tiles(basemaps.Esri.WorldImagery)
+    esri_world_imagery.base = True
+    
+    openstreetmap = basemap_to_tiles(basemaps.OpenStreetMap.Mapnik)
+    openstreetmap.base = True
+
+    opentopomap = basemap_to_tiles(basemaps.OpenTopoMap)
+    opentopomap.base = True
+
     m = Map(
         center=(0, 0),
         zoom=3,
-        basemap=basemaps.Esri.WorldImagery,
+        layers=[openstreetmap, opentopomap, esri_world_imagery],
         scroll_wheel_zoom=True,
     )
+
+    m.add_control(LayersControl(position="topright"))
 
     # Add options
     m.add(ScaleControl(position="bottomleft"))
