@@ -115,6 +115,7 @@ def simulated_traj_server(input, output, session):
     @reactive.effect
     def _():
         # No need to read the index data if the zarr file was not successiully loaded
+        # or is still running
         if read_zarr_file.status() != "success":
             return
         read_index_data(input.simulated_traj_path())
@@ -213,6 +214,8 @@ def simulated_traj_server(input, output, session):
 
         # Read profile index file
         df = index_data()
+        if df is None:
+            return
 
         for i, (lat_init, lon_init) in enumerate(zip(lat_deployment, lon_deployment, strict=True)):
             lat_init, lon_init = float(lat_init), float(lon_init)
