@@ -2,6 +2,7 @@ import asyncio
 import tempfile
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from ipyleaflet import (
     basemaps,
@@ -76,8 +77,7 @@ def simulated_traj_server(input, output, session):
     # Add options
     m.add(ScaleControl(position="bottomleft"))
 
-    deployment_markers = [] # Markers for the floats' initial positions
-    selected_profile_layers = [] # Trajectory currently shown on click
+    trajectory_layers = [] # For profile trajectories (index_data)
 
     @output
     @render_widget
@@ -133,59 +133,57 @@ def simulated_traj_server(input, output, session):
             return None
         return read_index_data.result()
 
-    def _show_trajectory(float_index, lat_init, lon_init):
-        """
-        Returns a function that shows the trajectory of the float with the given index
-        when called. The trajectory is built from the profile index data.
-        """
-        def _on_click(**kwargs): # need to accept **kwargs because of ipyleaflet's on_click 
-            for layer in selected_profile_layers:
-                m.remove(layer)
-            selected_profile_layers.clear() # clear previous trajectory
+    # def _show_trajectory(float_index, lat_init, lon_init):
+    #     """
+    #     Returns a function that shows the trajectory of the float with the given index
+    #     when called. The trajectory is built from the profile index data.
+    #     """
+    #     def _on_click(**kwargs): # need to accept **kwargs because of ipyleaflet's on_click
+    #         for layer in selected_profile_layers:
+    #             m.remove(layer)
+    #         selected_profile_layers.clear() # clear previous trajectory
+    #
+    #         df = index_data() # read index data from the reactive value
+    #         if df is None:
+    #             return
+    #
+    #         unique_wmos = sorted(df["wmo"].unique()) # Get unique WMO numbers
+    #
+    #         profile = df[df["wmo"] == unique_wmos[float_index]].sort_values("cycle_number")
+    #         if profile.empty:
+    #             return
+    #
+    #         trajectory = list(zip(profile["latitude"], profile["longitude"], strict=True))
+    #         trajectory.insert(0, (lat_init, lon_init)) # Add initial position at the beginning
+    #         line = Polyline(locations=trajectory, color="#2c7fb8", weight=2, fill=False)
+    #         m.add(line)
+    #         selected_profile_layers.append(line)
+    #
+    #         for row in profile.itertuples(): # Better than iterrows() here (simpler acess to fields)
+    #             popup = HTML(
+    #                 value=(
+    #                     f"<b>Float</b> {row.wmo}<br>"
+    #                     f"<b>Cycle</b> {row.cycle_number}<br>"
+    #                     f"<b>Datetime</b> {row.date}<br>"
+    #                     f"<b>Latitude</b> {row.latitude:.3f}<br>"
+    #                     f"<b>Longitude</b> {row.longitude:.3f}"
+    #                 )
+    #             )
+    #             point = CircleMarker(
+    #                 location=(row.latitude, row.longitude),
+    #                 radius=5,
+    #                 color="#2c7fb8",
+    #                 fill_color="#2c7fb8",
+    #                 fill_opacity=1,
+    #                 weight=1,
+    #                 popup=popup,
+    #             )
+    #             m.add(point)
+    #             selected_profile_layers.append(point)
+    #
+    #     return _on_click
 
-            df = index_data() # read index data from the reactive value
-            if df is None:
-                return
-
-            unique_wmos = sorted(df["wmo"].unique()) # Get unique WMO numbers
-
-            profile = df[df["wmo"] == unique_wmos[float_index]].sort_values("cycle_number")
-            if profile.empty:
-                return
-
-            trajectory = list(zip(profile["latitude"], profile["longitude"], strict=True))
-            trajectory.insert(0, (lat_init, lon_init)) # Add initial position at the beginning
-            line = Polyline(locations=trajectory, color="#2c7fb8", weight=2, fill=False)
-            m.add(line)
-            selected_profile_layers.append(line)
-
-            for row in profile.itertuples(): # Better than iterrows() here (simpler acess to fields)
-                popup = HTML(
-                    value=(
-                        f"<b>Float</b> {row.wmo}<br>"
-                        f"<b>Cycle</b> {row.cycle_number}<br>"
-                        f"<b>Datetime</b> {row.date}<br>"
-                        f"<b>Latitude</b> {row.latitude:.3f}<br>"
-                        f"<b>Longitude</b> {row.longitude:.3f}"
-                    )
-                )
-                point = CircleMarker(
-                    location=(row.latitude, row.longitude),
-                    radius=5,
-                    color="#2c7fb8",
-                    fill_color="#2c7fb8",
-                    fill_opacity=1,
-                    weight=1,
-                    popup=popup,
-                )
-                m.add(point)
-                selected_profile_layers.append(point)
-
-        return _on_click
-
-    # Plot each float's initial (deployment) position, replacing whatever was
-    # drawn for a previously read file. Click a marker to reveal its
-    # full trajectory, built from the profile index data.
+    # Plot every float's whole trajectory (based on index data, i.e. profiles)
     @reactive.effect
     def _():
         status = read_zarr_file.status()
@@ -199,35 +197,70 @@ def simulated_traj_server(input, output, session):
         if status != "success":
             return
 
-        for marker in deployment_markers: # For previous markers/trajectory
-            m.remove(marker)
-        deployment_markers.clear()
-        for layer in selected_profile_layers:
+        for layer in trajectory_layers: # For previous file's trajectories
             m.remove(layer)
-        selected_profile_layers.clear()
+        trajectory_layers.clear()
+
 
         ds = read_zarr_file.result()
         if "lat" not in ds or "lon" not in ds:
             return
 
-        lats = np.atleast_2d(ds["lat"].values) # To make sure it's 2D even if only 1 float
-        lons = np.atleast_2d(ds["lon"].values)
-        if lats.size == 0:
+        lat_deployment = ds["lat"].isel(obs=0).values
+        lon_deployment = ds["lon"].isel(obs=0).values
+        if lat_deployment.size == 0:
             return
 
-        for i, (lat_row, lon_row) in enumerate(zip(lats, lons, strict=True)):
-            marker = CircleMarker(
-                location=(float(lat_row[0]), float(lon_row[0])),
-                draggable=False,
-                radius=5,
-                color="#2c7fb8",
-                fill_color="#2c7fb8",
-                fill_opacity=1,
-                weight=1,
-                #popup=HTML(value=f"<b>Float {i}</b><br>")
-            )
-            marker.on_click(_show_trajectory(i, float(lat_row[0]), float(lon_row[0])))
-            m.add(marker)
-            deployment_markers.append(marker)
+        # Read profile index file
+        df = index_data()
 
-    return read_zarr_file
+        for i, (lat_init, lon_init) in enumerate(zip(lat_deployment, lon_deployment, strict=True)):
+            lat_init, lon_init = float(lat_init), float(lon_init)
+
+            # Default WMO value starts at 9000000
+            wmo = 9000000 + i
+
+            # Add "cycle 0" (i.e. deployment info)
+            cycle_zero = pd.DataFrame([{
+                "wmo": wmo,
+                "cycle_number": 0,
+                "date": pd.NaT,
+                "latitude": lat_init,
+                "longitude": lon_init,
+            }])
+
+            if df is not None:
+                profile = df[df["wmo"] == wmo].sort_values("cycle_number")
+                profile = pd.concat([cycle_zero, profile], ignore_index=True)
+            else:
+                profile = cycle_zero # Float did not reach one profile for x reason
+
+            if len(profile) > 1: # Polyline needs at least 2 points
+                trajectory = list(zip(profile["latitude"], profile["longitude"], strict=True))
+                line = Polyline(locations=trajectory, color="#000000", weight=1, fill=False)
+                m.add(line)
+                trajectory_layers.append(line)
+
+            for row in profile.itertuples(): # Better than iterrows() here (simpler access to fields)
+                popup = HTML(
+                    value=(
+                        f"<b>Float</b> {row.wmo}<br>"
+                        f"<b>Cycle</b> {row.cycle_number}<br>"
+                        f"<b>Datetime</b> {row.date}<br>"
+                        f"<b>Latitude</b> {row.latitude:.3f}<br>"
+                        f"<b>Longitude</b> {row.longitude:.3f}"
+                    )
+                )
+                point = CircleMarker(
+                    location=(row.latitude, row.longitude),
+                    radius=3,
+                    color="#FFFFFF",
+                    fill_color="#000000",
+                    fill_opacity=1,
+                    weight=1,
+                    popup=popup,
+                )
+                m.add(point)
+                trajectory_layers.append(point)
+
+    return

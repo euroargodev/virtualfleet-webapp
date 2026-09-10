@@ -9,7 +9,7 @@ from virtualfleet_webapp.logic.utils import (
     check_config_file,
     get_velocity_extent,
     read_config_file,
-    resolve_speed_field_path,
+    list_speed_field_path,
     section_title,
 )
 
@@ -142,6 +142,8 @@ def speed_field_server(input, output, session):
 
     # Opening a NetCDF can take a while (e.g. size) so better
     # use an async process (if app deployed on server at some point)
+    @ui.bind_task_button(button_id="validate_speed_field_a")
+    @ui.bind_task_button(button_id="validate_speed_field_b")
     @reactive.extended_task
     async def _load_velocity_field(src, mapping):
         return await asyncio.to_thread(_build_velocity_field, src, mapping)
@@ -178,7 +180,7 @@ def speed_field_server(input, output, session):
         if not path:
             ui.notification_show("Provide a path to the velocity field.", type="error")
             return
-        pattern = resolve_speed_field_path(path) # used for Velocity(src=...) 
+        pattern = list_speed_field_path(path) # used for Velocity(src=...) 
         config_file = input.write_config_file()
         if not config_file:
             ui.notification_show("Upload a variable mapping config file.", type="error")

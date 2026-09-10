@@ -77,9 +77,8 @@ def read_config_file(config_file):
         return json.load(f)
     
 
-def resolve_speed_field_path(path):
-    """Resolve a velocity field path (user-provided) suitable for Velocity(src=...).
-    Either a file path directly or a glob pattern if `path` is a directory.
+def list_speed_field_path(path):
+    """List velocity field path(s) (user-provided) suitable for Velocity(src=...).
     """
     p = Path(path)
     if p.is_dir():
