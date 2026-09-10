@@ -113,6 +113,7 @@ def simulated_traj_server(input, output, session):
         return await asyncio.to_thread(_read_index_data, zarr_path)
 
     @reactive.effect
+    @reactive.event(read_zarr_file.status)
     def _():
         # No need to read the index data if the zarr file was not successiully loaded
         # or is still running
@@ -186,6 +187,7 @@ def simulated_traj_server(input, output, session):
 
     # Plot every float's whole trajectory (based on index data, i.e. profiles)
     @reactive.effect
+    @reactive.event(index_data)
     def _():
         status = read_zarr_file.status()
 
@@ -217,15 +219,17 @@ def simulated_traj_server(input, output, session):
         if df is None:
             return
 
+        print(df.head)
+
         for i, (lat_init, lon_init) in enumerate(zip(lat_deployment, lon_deployment, strict=True)):
             lat_init, lon_init = float(lat_init), float(lon_init)
+            print(i)
 
-            # Default WMO value starts at 9000000
-            wmo = 9000000 + i
+            unique_wmos = sorted(df["wmo"].unique())
 
             # Add "cycle 0" (i.e. deployment info)
             cycle_zero = pd.DataFrame([{
-                "wmo": wmo,
+                "wmo": int(unique_wmos[i]),
                 "cycle_number": 0,
                 "date": pd.NaT,
                 "latitude": lat_init,
@@ -233,7 +237,7 @@ def simulated_traj_server(input, output, session):
             }])
 
             if df is not None:
-                profile = df[df["wmo"] == wmo].sort_values("cycle_number")
+                profile = df[df["wmo"] == int(unique_wmos[i])].sort_values("cycle_number")
                 profile = pd.concat([cycle_zero, profile], ignore_index=True)
             else:
                 profile = cycle_zero # Float did not reach one profile for x reason
